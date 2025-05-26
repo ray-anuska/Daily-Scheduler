@@ -102,8 +102,8 @@ export function TemplateManager({ open, onOpenChange }: TemplateManagerProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow min-h-0 overflow-y-auto"> {/* Native scroll here */}
-          <div className="space-y-6 py-4 pr-4"> {/* Added pr-4 for scrollbar, content moves here */}
+        <div className="flex-grow overflow-y-auto min-h-0">
+          <div className="space-y-6 p-4"> {/* Changed pr-4 to p-4 */}
             {editingTemplate ? (
               <div>
                 <h3 className="text-lg font-semibold mb-3">Edit Template: {editingTemplate.name}</h3>
