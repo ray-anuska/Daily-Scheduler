@@ -201,7 +201,7 @@ export function CalendarView() {
             onSelect={(date) => {
               setSelectedDate(date);
             }}
-            className="rounded-md w-full"
+            className="rounded-md w-full block" // Added 'block' here
             modifiers={{ hasTasks: daysWithTasksModifiers }}
             modifiersClassNames={{
               hasTasks: 'day-with-tasks-modifier',
