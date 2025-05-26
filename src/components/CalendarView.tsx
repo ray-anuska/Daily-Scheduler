@@ -125,6 +125,9 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
   const hydrated = useHydration();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [calendarTitle, setCalendarTitle] = useState("Monthly Calendar");
+  const [isEditingCalendarTitle, setIsEditingCalendarTitle] = useState(false);
+
 
   const {
     tasksByDate,
@@ -301,6 +304,16 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     setEditingDayNoteFor(null);
   };
 
+  const handleCalendarTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCalendarTitle(e.target.value);
+  };
+
+  const handleCalendarTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setIsEditingCalendarTitle(false);
+    }
+  };
+
 
   return (
     <div ref={containerRef} className="flex flex-1 flex-row w-full overflow-hidden">
@@ -309,9 +322,25 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
         style={{ flexBasis: calendarFlexBasis, flexShrink: 0, minWidth: '200px' }}
       >
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-primary" /> Monthly Calendar
-          </CardTitle>
+          {isEditingCalendarTitle ? (
+            <Input
+              type="text"
+              value={calendarTitle}
+              onChange={handleCalendarTitleChange}
+              onBlur={() => setIsEditingCalendarTitle(false)}
+              onKeyDown={handleCalendarTitleKeyDown}
+              className="text-2xl font-semibold leading-none tracking-tight h-auto p-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              autoFocus
+            />
+          ) : (
+            <CardTitle 
+              className="text-2xl flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded-md -m-1"
+              onClick={() => setIsEditingCalendarTitle(true)}
+              title="Click to edit title"
+            >
+              <CalendarDays className="h-6 w-6 text-primary" /> {calendarTitle}
+            </CardTitle>
+          )}
         </CardHeader>
         <CardContent className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto">
           <Calendar
@@ -321,7 +350,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
               setSelectedDate(date);
               if (date) {
                 setIsTaskSidebarOpen(true);
-                setEditingDayNoteFor(null); // Close note editor when changing day
+                setEditingDayNoteFor(null); 
               }
             }}
             className="rounded-md w-full block" 
@@ -514,5 +543,4 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     </div>
   );
 }
-
     
