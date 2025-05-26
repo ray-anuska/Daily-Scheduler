@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { format, parseISO, isSameMonth } from 'date-fns';
 import { useAppStore } from '@/lib/store';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,19 +23,17 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Task } from '@/lib/types';
 import type { DayContentProps } from 'react-day-picker';
-import { useHydration } from '@/hooks/useHydration'; 
+import { useHydration } from '@/hooks/useHydration';
 
 const CustomDayContent = (props: DayContentProps) => {
-  const hydrated = useHydration(); 
+  const hydrated = useHydration();
   const dateKey = format(props.date, 'yyyy-MM-dd');
-  
-  // Subscribe directly to the tasks for this specific dateKey from the store
+
   const tasksForDay_store = useAppStore(state => state.tasksByDate[dateKey]?.tasks || []);
 
-  // The tasks to render, dependent on hydration and the direct store subscription
   const tasks = useMemo(() => {
     if (!hydrated) {
-      return []; 
+      return [];
     }
     return tasksForDay_store;
   }, [hydrated, tasksForDay_store]);
@@ -58,21 +56,21 @@ const CustomDayContent = (props: DayContentProps) => {
   );
 
   let taskDisplayElement;
-  if (!hydrated && tasks.length === 0) { 
+  if (!hydrated && tasks.length === 0) {
     taskDisplayElement = (
        <div className="flex-grow flex items-center justify-center">
         <p className="text-xs text-muted-foreground/70">Loading...</p>
       </div>
     );
-  } else if (hydrated && tasks.length === 0) { 
+  } else if (hydrated && tasks.length === 0) {
      taskDisplayElement = (
       <div className="flex-grow flex items-center justify-center">
         <p className="text-xs text-muted-foreground/70">No tasks</p>
       </div>
     );
-  } else { 
+  } else {
     taskDisplayElement = (
-      <ScrollArea className="flex-grow h-0"> 
+      <ScrollArea className="flex-grow h-0">
         <ul className="space-y-1 text-xs">
           {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
             <li
@@ -107,25 +105,93 @@ export function CalendarView() {
   const hydrated = useHydration();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  
-  const { 
-    tasksByDate, 
+
+  const {
+    tasksByDate,
     getTasksForDate,
-    addTask, 
-    deleteTask, 
+    addTask,
+    deleteTask,
     toggleTaskCompletion,
     templates,
     applyTemplateToDate
   } = useAppStore();
+
+  const [calendarFlexBasis, setCalendarFlexBasis] = useState('66%'); // Default to 2/3 for calendar
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const draggerRef = useRef<HTMLDivElement>(null);
+
+  const dragStartXRef = useRef(0);
+  const dragStartWidthPxRef = useRef(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartXRef.current = e.clientX;
+    const calendarCardElement = containerRef.current?.firstChild as HTMLElement;
+    if (calendarCardElement) {
+      dragStartWidthPxRef.current = calendarCardElement.offsetWidth;
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !containerRef.current || !draggerRef.current) return;
+
+      const dx = e.clientX - dragStartXRef.current;
+      let newCalendarWidthPx = dragStartWidthPxRef.current + dx;
+
+      const containerWidthPx = containerRef.current.offsetWidth;
+      const draggerWidthPx = draggerRef.current.offsetWidth;
+      // Calculate margin based on computed style if possible, default to a reasonable value for mx-3 (0.75rem * 16px/rem * 2 sides)
+      const computedStyle = getComputedStyle(draggerRef.current);
+      const marginLeft = parseFloat(computedStyle.marginLeft);
+      const marginRight = parseFloat(computedStyle.marginRight);
+      const marginPx = marginLeft + marginRight;
+      
+      const availableWidthForPanels = containerWidthPx - draggerWidthPx - marginPx;
+
+      const minCalendarPanelWidthPx = Math.max(200, availableWidthForPanels * 0.25); // Min 200px or 25%
+      const minTaskPanelWidthPx = Math.max(200, availableWidthForPanels * 0.20);    // Min 200px or 20%
+      
+      const maxCalendarPanelWidthPx = availableWidthForPanels - minTaskPanelWidthPx;
+
+      newCalendarWidthPx = Math.max(minCalendarPanelWidthPx, Math.min(newCalendarWidthPx, maxCalendarPanelWidthPx));
+      
+      setCalendarFlexBasis(`${newCalendarWidthPx}px`);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging]);
+
 
   const formattedSelectedDate = useMemo(() => {
     return selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   }, [selectedDate]);
 
   const dailyTasksData = useMemo(() => {
-    if (!hydrated || !formattedSelectedDate) return undefined; 
+    if (!hydrated || !formattedSelectedDate) return undefined;
     return getTasksForDate(formattedSelectedDate);
-  }, [hydrated, formattedSelectedDate, getTasksForDate, tasksByDate]); 
+  }, [hydrated, formattedSelectedDate, getTasksForDate, tasksByDate]);
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
   const dayOverridesTemplate: boolean = dailyTasksData?.overridesTemplate || false;
@@ -153,17 +219,17 @@ export function CalendarView() {
     if (!formattedSelectedDate) return;
     toggleTaskCompletion(formattedSelectedDate, taskId);
   };
-  
+
   const handleApplyTemplate = (templateId: string, force: boolean = false) => {
     if (!formattedSelectedDate || !templateId) return;
-    
+
     const currentTasks = getTasksForDate(formattedSelectedDate);
     const originalTaskCount = currentTasks?.tasks.length || 0;
     const wasOverriding = currentTasks?.overridesTemplate || false;
 
     applyTemplateToDate(templateId, formattedSelectedDate, force);
-    
-    const newTasks = getTasksForDate(formattedSelectedDate); 
+
+    const newTasks = getTasksForDate(formattedSelectedDate);
     if (newTasks && (newTasks.tasks.length !== originalTaskCount || !wasOverriding || force)) {
       toast({ title: "Template Applied", description: `Template applied to ${format(selectedDate!, 'MMMM d, yyyy')}.` });
     } else if (wasOverriding && !force && (templates.find(t => t.id === templateId)?.tasks?.length ?? 0) > 0) {
@@ -183,17 +249,19 @@ export function CalendarView() {
 
 
   return (
-    <div className="grid w-full md:grid-cols-3 gap-6 md:gap-8">
-      <Card className="md:col-span-2 shadow-lg flex flex-col overflow-hidden">
+    <div ref={containerRef} className="flex flex-1 flex-row w-full overflow-hidden">
+      <Card
+        className="shadow-lg flex flex-col overflow-hidden"
+        style={{ flexBasis: calendarFlexBasis, flexShrink: 0, minWidth: '200px' }}
+      >
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
             <CalendarDays className="h-6 w-6 text-primary" /> Monthly Calendar
           </CardTitle>
           <CardDescription>Select a day to view and manage its tasks. Calendar cells show a preview of tasks.</CardDescription>
         </CardHeader>
-        <CardContent 
-          className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto" 
-          style={{ maxHeight: '65vh' }} 
+        <CardContent
+          className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto"
         >
           <Calendar
             mode="single"
@@ -201,19 +269,29 @@ export function CalendarView() {
             onSelect={(date) => {
               setSelectedDate(date);
             }}
-            className="rounded-md w-full block" 
+            className="rounded-md w-full block"
             modifiers={{ hasTasks: daysWithTasksModifiers }}
             modifiersClassNames={{
               hasTasks: 'day-with-tasks-modifier',
             }}
             components={{
-              DayContent: CustomDayContent, 
+              DayContent: CustomDayContent,
             }}
           />
         </CardContent>
       </Card>
 
-      <Card className="md:col-span-1 shadow-lg">
+      <div
+        ref={draggerRef}
+        className="w-2 bg-border cursor-col-resize hover:bg-primary transition-colors mx-3 self-stretch"
+        onMouseDown={handleMouseDown}
+        style={{ flexShrink: 0 }}
+      />
+
+      <Card
+        className="shadow-lg flex flex-col flex-grow overflow-hidden"
+        style={{ minWidth: '250px' }}
+      >
         <CardHeader>
           <CardTitle className="text-xl">
             Tasks for: {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'No date selected'}
@@ -229,7 +307,7 @@ export function CalendarView() {
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="flex flex-col h-[calc(100%-7rem)]">
+        <CardContent className="flex flex-col flex-grow h-0"> {/* flex-grow and h-0 for proper scrollarea sizing */}
           <div className="mb-4 space-y-3">
             <div className="flex gap-2">
               <Input
@@ -246,9 +324,9 @@ export function CalendarView() {
             </div>
             {templates.length > 0 && (
                <div className="flex gap-2 items-center">
-                <Select onValueChange={(templateId) => { 
+                <Select onValueChange={(templateId) => {
                     const selectedTemplate = templates.find(t => t.id === templateId);
-                    if(selectedTemplate) handleApplyTemplate(templateId); 
+                    if(selectedTemplate) handleApplyTemplate(templateId);
                   }}>
                   <SelectTrigger className="flex-grow" aria-label="Apply Template">
                     <SelectValue placeholder="Apply a Template..." />
@@ -276,7 +354,7 @@ export function CalendarView() {
                           const selectedTemplate = templates.find(t => t.id === templateId);
                           if(selectedTemplate) {
                             const cancelButton = document.querySelector('button[aria-label="Cancel"]') as HTMLElement | null;
-                            if (cancelButton) cancelButton.click(); 
+                            if (cancelButton) cancelButton.click();
                             handleApplyTemplate(templateId, true);
                           }
                         }}>
@@ -342,3 +420,4 @@ export function CalendarView() {
   );
 }
 
+    
