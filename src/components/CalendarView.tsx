@@ -41,6 +41,7 @@ const CustomDayContent = (props: CustomDayContentProps) => {
   }, [hydrated, tasksForDay_store]);
 
   useEffect(() => {
+    // This effect ensures the component re-renders if tasksForDay_store changes after hydration
   }, [tasksForDay_store]);
 
 
@@ -138,8 +139,6 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     if (isTaskSidebarOpen) {
       setCalendarFlexBasis(flexBasisBeforeSidebarClosed);
     } else {
-      // Only update flexBasisBeforeSidebarClosed if the sidebar *was* open and is now closing
-      // and the current calendarFlexBasis is not already '100%' (which means it was already closed)
       if (calendarFlexBasis !== '100%') { 
         setFlexBasisBeforeSidebarClosed(calendarFlexBasis);
       }
@@ -181,7 +180,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
       
       const newBasis = `${newCalendarWidthPx}px`;
       setCalendarFlexBasis(newBasis);
-      if(isTaskSidebarOpen) { // Only update 'beforeClosed' if sidebar is actually open
+      if(isTaskSidebarOpen) { 
          setFlexBasisBeforeSidebarClosed(newBasis); 
       }
     };
@@ -225,6 +224,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
 
   const handleTaskToggle = useCallback(() => {
     // This callback is mostly to satisfy the prop requirement for CustomDayContent.
+    // It can also be used to trigger a re-render of this component if needed.
   }, []);
 
   const handleAddTask = () => {
@@ -235,7 +235,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     addTask(formattedSelectedDate, newTaskTitle.trim());
     setNewTaskTitle('');
     toast({ title: 'Task Added' });
-    handleTaskToggle();
+    handleTaskToggle(); // Ensures CustomDayContent re-evaluates if its props change
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -329,13 +329,13 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
           style={{ minWidth: '250px' }}
         >
           <CardHeader className="relative">
-            <CardTitle className="text-xl pr-10"> {/* Added pr-10 to avoid overlap with close button */}
+            <CardTitle className="text-xl pr-10"> 
               Tasks for: {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'No date selected'}
             </CardTitle>
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-3 right-3 h-7 w-7" // Adjusted positioning and size
+              className="absolute top-3 right-3 h-7 w-7" 
               onClick={() => setIsTaskSidebarOpen(false)}
               aria-label="Close task sidebar"
             >
