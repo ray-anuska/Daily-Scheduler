@@ -312,7 +312,6 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
           <CardTitle className="text-2xl flex items-center gap-2">
             <CalendarDays className="h-6 w-6 text-primary" /> Monthly Calendar
           </CardTitle>
-          <CardDescription>Select a day to view and manage its tasks. Calendar cells show a preview of tasks.</CardDescription>
         </CardHeader>
         <CardContent className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto">
           <Calendar
@@ -515,3 +514,5 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     </div>
   );
 }
+
+    
