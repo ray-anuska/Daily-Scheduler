@@ -201,7 +201,7 @@ export function CalendarView() {
             onSelect={(date) => {
               setSelectedDate(date);
             }}
-            className="rounded-md w-full block" // Added 'block' here
+            className="rounded-md w-full block" 
             modifiers={{ hasTasks: daysWithTasksModifiers }}
             modifiersClassNames={{
               hasTasks: 'day-with-tasks-modifier',
@@ -261,7 +261,7 @@ export function CalendarView() {
                 </Select>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                     <Button variant="outline" size="sm" disabled={!templates.find(t => !!t) || !selectedDate}>Force Apply</Button>
+                     <Button variant="outline" size="sm" disabled={!templates.find(t => !!t) || !selectedDate}>Apply</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
