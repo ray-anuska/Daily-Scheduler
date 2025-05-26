@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore, defaultThemeColors } from '@/lib/store';
 import type { CustomTheme, ThemeColors } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,44 @@ interface ThemeSwitcherProps {
 
 const themeColorKeys = Object.keys(defaultThemeColors) as Array<keyof ThemeColors>;
 
+const commonNamedColors: Array<{ name: string; hsl: string }> = [
+  { name: "White", hsl: "0 0% 100%" },
+  { name: "Off-White", hsl: "0 0% 98%" },
+  { name: "Light Gray", hsl: "0 0% 96%" },
+  { name: "Medium Gray", hsl: "0 0% 50%" },
+  { name: "Dark Gray", hsl: "0 0% 20%" },
+  { name: "Near Black", hsl: "240 10% 3.9%"},
+  { name: "Black", hsl: "0 0% 0%" },
+  { name: "Soft Blue", hsl: "210 60% 95%" },
+  { name: "Sky Blue", hsl: "207 90% 54%" },
+  { name: "Forest Green", hsl: "120 39% 49%" },
+  { name: "Sunny Yellow", hsl: "54 100% 70%" },
+  { name: "Warm Orange", hsl: "30 100% 65%" },
+  { name: "Crimson Red", hsl: "0 80% 60%" },
+  { name: "Soft Pink", hsl: "340 80% 95%" },
+  { name: "Lavender", hsl: "240 60% 90%" },
+];
+
+const getOptionsForKey = (key: keyof ThemeColors): Array<{ label: string; value: string }> => {
+  const defaultOption = { label: `Default (${defaultThemeColors[key]})`, value: defaultThemeColors[key] };
+  
+  const standardOptions = commonNamedColors.map(c => ({
+    label: `${c.name} (${c.hsl})`,
+    value: c.hsl,
+  }));
+
+  const customOption = { label: "Custom HSL", value: "__CUSTOM__" };
+
+  // Combine, ensuring default is first, then unique common colors, then custom
+  const combinedOptions = [defaultOption, ...standardOptions, customOption];
+  
+  // Remove duplicates by HSL value, keeping the first occurrence (preferring default label if HSL matches a common)
+  const uniqueOptionsByValue = Array.from(new Map(combinedOptions.map(item => [item.value, item])).values());
+  
+  return uniqueOptionsByValue;
+};
+
+
 export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
   const { toast } = useToast();
   const {
@@ -41,47 +79,100 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     addCustomTheme,
     setActiveThemeId,
     deleteCustomTheme,
-    getActiveThemeColors,
   } = useAppStore();
 
+  // State for the "Create New Theme" form
   const [newThemeName, setNewThemeName] = useState('');
-  const [newThemeColors, setNewThemeColors] = useState<Partial<ThemeColors>>(
-    {}
-  );
+  const [newThemeColors, setNewThemeColors] = useState<Partial<ThemeColors>>(() => ({ ...defaultThemeColors }));
+  const [selectedColorOptions, setSelectedColorOptions] = useState<Partial<Record<keyof ThemeColors, string>>>(() => {
+    const initialSelections: Partial<Record<keyof ThemeColors, string>> = {};
+    themeColorKeys.forEach(key => {
+      initialSelections[key] = defaultThemeColors[key];
+    });
+    return initialSelections;
+  });
+  const [customHSLInputsVisible, setCustomHSLInputsVisible] = useState<Partial<Record<keyof ThemeColors, boolean>>>(() => {
+    const initialVisibility: Partial<Record<keyof ThemeColors, boolean>> = {};
+    themeColorKeys.forEach(key => {
+      initialVisibility[key] = false;
+    });
+    return initialVisibility;
+  });
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setNewThemeName('');
+      setNewThemeColors({ ...defaultThemeColors });
+      const initialSelections: Partial<Record<keyof ThemeColors, string>> = {};
+      const initialVisibility: Partial<Record<keyof ThemeColors, boolean>> = {};
+      themeColorKeys.forEach(key => {
+        initialSelections[key] = defaultThemeColors[key];
+        initialVisibility[key] = false;
+      });
+      setSelectedColorOptions(initialSelections);
+      setCustomHSLInputsVisible(initialVisibility);
+    }
+  }, [open]);
 
   const handleAddTheme = () => {
     if (!newThemeName.trim()) {
       toast({ title: 'Error', description: 'Theme name cannot be empty.', variant: 'destructive' });
       return;
     }
-    // Basic validation for HSL format (e.g., "H S% L%") - can be more robust
-    for (const key in newThemeColors) {
-      const value = newThemeColors[key as keyof ThemeColors];
-      if (value && !/^\d{1,3}\s\d{1,3}%\s\d{1,3}%$/.test(value)) {
-        toast({ title: 'Error', description: `Invalid HSL format for ${key}. Expected 'H S% L%'.`, variant: 'destructive' });
+
+    const finalThemeColors: Partial<ThemeColors> = {};
+    for (const key of themeColorKeys) {
+      const colorValue = newThemeColors[key];
+      if (colorValue && !/^\d{1,3}\s\d{1,3}%\s\d{1,3}%$/.test(colorValue)) {
+        toast({ title: 'Error', description: `Invalid HSL format for ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}. Expected 'H S% L%'.`, variant: 'destructive' });
         return;
+      }
+      if (colorValue) {
+        finalThemeColors[key] = colorValue;
       }
     }
 
     const themeToAdd: Omit<CustomTheme, 'id'> = {
       name: newThemeName.trim(),
-      colors: { ...newThemeColors },
+      colors: finalThemeColors,
     };
     const addedTheme = addCustomTheme(themeToAdd);
     setActiveThemeId(addedTheme.id);
+    // Reset form fields after adding
     setNewThemeName('');
-    setNewThemeColors({});
+    setNewThemeColors({ ...defaultThemeColors });
+     const initialSelections: Partial<Record<keyof ThemeColors, string>> = {};
+      const initialVisibility: Partial<Record<keyof ThemeColors, boolean>> = {};
+      themeColorKeys.forEach(key => {
+        initialSelections[key] = defaultThemeColors[key];
+        initialVisibility[key] = false;
+      });
+    setSelectedColorOptions(initialSelections);
+    setCustomHSLInputsVisible(initialVisibility);
+
     toast({ title: 'Theme Added', description: `${addedTheme.name} has been added and set as active.` });
   };
 
-  const handleColorInputChange = (
-    colorKey: keyof ThemeColors,
-    value: string
-  ) => {
-    setNewThemeColors((prev) => ({ ...prev, [colorKey]: value }));
+  const handleColorOptionChange = (colorKey: keyof ThemeColors, selectedValue: string) => {
+    setSelectedColorOptions(prev => ({ ...prev, [colorKey]: selectedValue }));
+    if (selectedValue === "__CUSTOM__") {
+      setCustomHSLInputsVisible(prev => ({ ...prev, [colorKey]: true }));
+      // When switching to custom, ensure newThemeColors[colorKey] retains its current value,
+      // or set it to the default for that key if it's undefined, so the input isn't blank.
+      if (!newThemeColors[colorKey]) {
+        setNewThemeColors(prev => ({...prev, [colorKey]: defaultThemeColors[colorKey]}));
+      }
+    } else {
+      setCustomHSLInputsVisible(prev => ({ ...prev, [colorKey]: false }));
+      setNewThemeColors(prev => ({ ...prev, [colorKey]: selectedValue }));
+    }
   };
 
-  const currentActiveColors = getActiveThemeColors();
+  const handleCustomHSLInputChange = (colorKey: keyof ThemeColors, hslValue: string) => {
+    setNewThemeColors(prev => ({ ...prev, [colorKey]: hslValue }));
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,12 +181,12 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
           <DialogTitle className="flex items-center gap-2"><Palette className="h-5 w-5" /> Theme Settings</DialogTitle>
           <DialogDescription>
             Customize the application&apos;s appearance. Select an active theme or create your own.
-            Colors should be in HSL format (e.g., &quot;240 60% 94.1%&quot;).
+            HSL format: e.g., &quot;240 60% 94.1%&quot;.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-grow overflow-y-auto min-h-0">
-          <div className="space-y-6 p-4"> {/* Changed pr-4 to p-4 */}
+          <div className="space-y-6 p-4">
             <div>
               <Label htmlFor="active-theme-select" className="text-sm font-medium">Active Theme</Label>
               <Select
@@ -120,7 +211,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
 
             <div>
               <h3 className="text-lg font-semibold mb-3">Create New Theme</h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
                   <Label htmlFor="new-theme-name">Theme Name</Label>
                   <Input
@@ -131,17 +222,39 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                     className="mt-1"
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
                   {themeColorKeys.map((key) => (
-                    <div key={key}>
-                      <Label htmlFor={`theme-color-${key}`} className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</Label>
-                      <Input
-                        id={`theme-color-${key}`}
-                        value={newThemeColors[key] || ''}
-                        onChange={(e) => handleColorInputChange(key, e.target.value)}
-                        placeholder={defaultThemeColors[key]}
-                        className="mt-1"
-                      />
+                    <div key={key} className="space-y-1">
+                      <Label htmlFor={`theme-select-${key}`} className="capitalize text-sm">
+                        {key.replace(/([A-Z])/g, ' $1')}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={selectedColorOptions[key] || defaultThemeColors[key]}
+                          onValueChange={(value) => handleColorOptionChange(key, value)}
+                        >
+                          <SelectTrigger id={`theme-select-${key}`} className="flex-grow">
+                            <SelectValue placeholder={`Select ${key}...`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getOptionsForKey(key).map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {customHSLInputsVisible[key] && (
+                          <Input
+                            id={`theme-hsl-${key}`}
+                            value={newThemeColors[key] || ''}
+                            onChange={(e) => handleCustomHSLInputChange(key, e.target.value)}
+                            placeholder={defaultThemeColors[key]}
+                            className="flex-grow"
+                            aria-label={`${key} HSL value`}
+                          />
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -180,6 +293,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                             deleteCustomTheme(theme.id);
                             toast({ title: 'Theme Deleted', description: `${theme.name} has been deleted.` });
                           }}
+                          aria-label={`Delete theme ${theme.name}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -198,3 +312,4 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     </Dialog>
   );
 }
+
