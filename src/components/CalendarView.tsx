@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { format, parseISO, isSameMonth } from 'date-fns';
 import { useAppStore } from '@/lib/store';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,15 +23,17 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Task } from '@/lib/types';
 import type { DayContentProps } from 'react-day-picker';
+import { Slider } from '@/components/ui/slider'; // Import the Slider component
 
 const CustomDayContent = (props: DayContentProps) => {
-  const { tasksByDate, getTasksForDate } = useAppStore();
+  const { getTasksForDate } = useAppStore(); // Subscribe directly for reactivity
   const dateKey = format(props.date, 'yyyy-MM-dd');
-  const dayData = getTasksForDate(dateKey);
+  
+  // Memoize tasks for the specific day to avoid re-fetches unless necessary
+  const dayData = useMemo(() => getTasksForDate(dateKey), [getTasksForDate, dateKey]);
   const tasks = dayData?.tasks || [];
   const MAX_TASKS_DISPLAYED = 3;
 
-  // Only render full content for days within the current display month
   if (!isSameMonth(props.date, props.displayMonth)) {
     return (
       <div className="flex h-full w-full items-center justify-center text-muted-foreground/50">
@@ -46,7 +48,7 @@ const CustomDayContent = (props: DayContentProps) => {
         {props.date.getDate()}
       </div>
       {tasks.length > 0 ? (
-        <ScrollArea className="flex-grow h-0"> {/* flex-grow and h-0 for scroll area to fill space */}
+        <ScrollArea className="flex-grow h-0"> 
           <ul className="space-y-1 text-xs">
             {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
               <li
@@ -79,7 +81,7 @@ export function CalendarView() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   const { 
-    tasksByDate, 
+    tasksByDate, // Keep for daysWithTasksModifiers, if still needed for other logic
     getTasksForDate, 
     addTask, 
     deleteTask, 
@@ -92,15 +94,68 @@ export function CalendarView() {
     return selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   }, [selectedDate]);
 
+  // This dailyTasksData is for the right-hand side panel.
+  // CustomDayContent fetches its own data for reactivity.
   const dailyTasksData = useMemo(() => {
     if (!formattedSelectedDate) return undefined;
     return getTasksForDate(formattedSelectedDate);
-  }, [formattedSelectedDate, getTasksForDate, tasksByDate]); 
+  }, [formattedSelectedDate, getTasksForDate, tasksByDate]); // tasksByDate is included here to re-evaluate when underlying data changes for selected day panel
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
   const dayOverridesTemplate: boolean = dailyTasksData?.overridesTemplate || false;
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  // Slider and scroll state
+  const scrollableCalendarRef = useRef<HTMLDivElement>(null);
+  const [sliderValue, setSliderValue] = useState(0);
+  const [sliderMax, setSliderMax] = useState(100);
+  const [isScrollable, setIsScrollable] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    if (scrollableCalendarRef.current) {
+      const { scrollHeight, clientHeight } = scrollableCalendarRef.current;
+      const currentIsScrollable = scrollHeight > clientHeight;
+      setIsScrollable(currentIsScrollable);
+      if (currentIsScrollable) {
+        setSliderMax(scrollHeight - clientHeight);
+      } else {
+        setSliderMax(0);
+        setSliderValue(0); 
+        scrollableCalendarRef.current.scrollTop = 0;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // Initial check and listen for resize
+    updateScrollState();
+    window.addEventListener('resize', updateScrollState);
+    return () => window.removeEventListener('resize', updateScrollState);
+  }, [selectedDate, tasksByDate, updateScrollState]); // Re-check on month/task changes
+
+  // Observe content changes in calendar (e.g. tasks loading)
+  useEffect(() => {
+    const observer = new MutationObserver(updateScrollState);
+    if (scrollableCalendarRef.current) {
+      observer.observe(scrollableCalendarRef.current, { childList: true, subtree: true });
+    }
+    return () => observer.disconnect();
+  }, [updateScrollState]);
+
+
+  const handleScroll = () => {
+    if (scrollableCalendarRef.current) {
+      setSliderValue(scrollableCalendarRef.current.scrollTop);
+    }
+  };
+
+  const handleSliderChange = (value: number) => {
+    setSliderValue(value);
+    if (scrollableCalendarRef.current) {
+      scrollableCalendarRef.current.scrollTop = value;
+    }
+  };
 
   const handleAddTask = () => {
     if (!formattedSelectedDate || !newTaskTitle.trim()) {
@@ -144,9 +199,6 @@ export function CalendarView() {
     return Object.keys(tasksByDate)
       .filter(dateStr => {
         const dayData = tasksByDate[dateStr];
-        const dateObj = parseISO(dateStr);
-        // Ensure modifier applies only to current month's view for hasTasks if that's desired,
-        // but for a general "has tasks" state, just checking task length is fine.
         return dayData?.tasks?.length > 0;
       })
       .map(dateStr => parseISO(dateStr));
@@ -155,28 +207,49 @@ export function CalendarView() {
 
   return (
     <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-      <Card className="md:col-span-2 shadow-lg">
+      <Card className="md:col-span-2 shadow-lg flex flex-col overflow-hidden"> {/* Added flex flex-col and overflow-hidden */}
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
             <CalendarDays className="h-6 w-6 text-primary" /> Monthly Calendar
           </CardTitle>
           <CardDescription>Select a day to view and manage its tasks. Calendar cells show a preview of tasks.</CardDescription>
         </CardHeader>
-        <CardContent className="p-0 sm:p-1 md:p-2"> {/* Reduced padding for more calendar space */}
+        <CardContent 
+          ref={scrollableCalendarRef}
+          className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto" 
+          style={{ maxHeight: '65vh' }} // Max height for scrollability
+          onScroll={handleScroll}
+        >
           <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={setSelectedDate}
-            className="rounded-md w-full" // Ensure calendar takes full width
+            onSelect={(date) => {
+              setSelectedDate(date);
+              // Slight delay to allow content to potentially rerender before scroll state update
+              setTimeout(updateScrollState, 50); 
+            }}
+            className="rounded-md w-full"
             modifiers={{ hasTasks: daysWithTasksModifiers }}
             modifiersClassNames={{
-              hasTasks: 'day-with-tasks-modifier', // This class can be used for subtle background hints if needed, but tasks are now visible
+              hasTasks: 'day-with-tasks-modifier',
             }}
             components={{
               DayContent: CustomDayContent, 
             }}
           />
         </CardContent>
+        {isScrollable && (
+          <div className="px-2 pb-2 md:px-4 md:pb-4 border-t border-border pt-2">
+            <Slider
+              value={[sliderValue]}
+              onValueChange={(valueArray) => handleSliderChange(valueArray[0])}
+              max={sliderMax}
+              step={1}
+              className="w-full"
+              aria-label="Scroll calendar vertically"
+            />
+          </div>
+        )}
       </Card>
 
       <Card className="md:col-span-1 shadow-lg">
@@ -195,7 +268,7 @@ export function CalendarView() {
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="flex flex-col h-[calc(100%-7rem)]">
+        <CardContent className="flex flex-col h-[calc(100%-7rem)]"> {/* Adjusted height calculation if needed */}
           <div className="mb-4 space-y-3">
             <div className="flex gap-2">
               <Input
@@ -237,16 +310,14 @@ export function CalendarView() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="sm:flex-col sm:space-x-0 sm:space-y-2">
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel aria-label="Cancel">Cancel</AlertDialogCancel>
                        <Select onValueChange={(templateId) => {
                           const selectedTemplate = templates.find(t => t.id === templateId);
                           if(selectedTemplate) {
+                            // Close the AlertDialog before applying, then apply
+                            const cancelButton = document.querySelector('button[aria-label="Cancel"]') as HTMLElement | null;
+                            if (cancelButton) cancelButton.click();
                             handleApplyTemplate(templateId, true);
-                            // Attempt to close dialog: Find the cancel button and click it programmatically
-                            // This is a bit of a hack, ideally AlertDialog state would be managed.
-                            const cancelButton = document.querySelector('button[aria-label="Cancel"]'); // Assuming cancel has an aria-label
-                            if (cancelButton instanceof HTMLElement) cancelButton.click();
-
                           }
                         }}>
                         <SelectTrigger className="w-full" aria-label="Select Template to Force Apply">
@@ -311,3 +382,4 @@ export function CalendarView() {
   );
 }
 
+    
