@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
 import { AuthPrompt } from '@/components/AuthPrompt';
-import { Settings, Palette, ListChecks, LogIn, LogOut } from 'lucide-react';
+import { Settings, Palette, ListChecks, LogIn, LogOut, Sidebar } from 'lucide-react'; // Added Sidebar icon
 import { useHydration } from '@/hooks/useHydration';
 import {
   DropdownMenu,
@@ -17,12 +17,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Import actual implemented dialogs
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { TemplateManager } from '@/components/TemplateManager';
 
+interface AppHeaderProps {
+  isTaskSidebarOpen: boolean;
+  toggleTaskSidebar: () => void;
+}
 
-export function AppHeader() {
+export function AppHeader({ isTaskSidebarOpen, toggleTaskSidebar }: AppHeaderProps) {
   const hydrated = useHydration();
   const currentUser = useAppStore((state) => state.currentUser);
   const setCurrentUser = useAppStore((state) => state.setCurrentUser);
@@ -31,7 +34,6 @@ export function AppHeader() {
   const [themeSwitcherOpen, setThemeSwitcherOpen] = useState(false);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
 
-  // Effect to show auth prompt if no user and once hydrated
   useEffect(() => {
     if (hydrated && !currentUser) {
       setAuthPromptOpen(true);
@@ -48,7 +50,6 @@ export function AppHeader() {
   };
 
   if (!hydrated) {
-    // Skeleton loader for header
     return (
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between px-4 md:px-6">
@@ -57,6 +58,7 @@ export function AppHeader() {
             <div className="h-7 w-48 bg-muted rounded animate-pulse" />
           </div>
           <div className="flex items-center space-x-2 md:space-x-4">
+            <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
             <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
             <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
             <div className="w-9 h-9 bg-muted rounded-full animate-pulse"></div>
@@ -83,6 +85,9 @@ export function AppHeader() {
             </Button>
             <Button variant="ghost" size="icon" onClick={() => setTemplateManagerOpen(true)} aria-label="Manage Templates">
               <ListChecks className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={toggleTaskSidebar} aria-label="Toggle Task Sidebar">
+              <Sidebar className="h-5 w-5" />
             </Button>
 
             {currentUser ? (
@@ -121,7 +126,6 @@ export function AppHeader() {
         </div>
       </header>
       <AuthPrompt open={authPromptOpen} onOpenChange={setAuthPromptOpen} />
-      {/* Use the actual implemented dialogs */}
       <ThemeSwitcher open={themeSwitcherOpen} onOpenChange={setThemeSwitcherOpen} />
       <TemplateManager open={templateManagerOpen} onOpenChange={setTemplateManagerOpen} />
     </>
