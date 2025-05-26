@@ -95,10 +95,9 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* This div wrapper structure matches TemplateManager for scrolling */}
-        <div className="flex-grow overflow-hidden py-4">
+        <div className="flex-grow overflow-hidden min-h-0"> {/* Added min-h-0 */}
           <ScrollArea className="h-full pr-6">
-            <div className="space-y-6"> {/* Padding is NOT on this div directly, but handled by its parent or the items inside */}
+            <div className="space-y-6 py-4"> {/* Moved py-4 here */}
               <div>
                 <Label htmlFor="active-theme-select" className="text-sm font-medium">Active Theme</Label>
                 <Select

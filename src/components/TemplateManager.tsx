@@ -103,9 +103,9 @@ export function TemplateManager({ open, onOpenChange }: TemplateManagerProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-hidden py-4">
+        <div className="flex-grow overflow-hidden min-h-0"> {/* Added min-h-0 */}
           <ScrollArea className="h-full pr-6">
-            <div className="space-y-6">
+            <div className="space-y-6 py-4"> {/* Moved py-4 here */}
               {editingTemplate ? (
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Edit Template: {editingTemplate.name}</h3>
