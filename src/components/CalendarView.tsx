@@ -23,15 +23,23 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Task } from '@/lib/types';
 import type { DayContentProps } from 'react-day-picker';
-import { Slider } from '@/components/ui/slider'; // Import the Slider component
+import { Slider } from '@/components/ui/slider';
+import { useHydration } from '@/hooks/useHydration'; // Import useHydration
 
 const CustomDayContent = (props: DayContentProps) => {
-  const { getTasksForDate } = useAppStore(); // Subscribe directly for reactivity
+  const hydrated = useHydration(); // Use the hydration hook
+  const { getTasksForDate } = useAppStore();
   const dateKey = format(props.date, 'yyyy-MM-dd');
   
-  // Memoize tasks for the specific day to avoid re-fetches unless necessary
-  const dayData = useMemo(() => getTasksForDate(dateKey), [getTasksForDate, dateKey]);
-  const tasks = dayData?.tasks || [];
+  // Defer getting tasks until hydrated to prevent mismatch with server render
+  const tasks = useMemo(() => {
+    if (!hydrated) {
+      return []; // On server and initial client render, assume no tasks for consistency
+    }
+    const dayData = getTasksForDate(dateKey);
+    return dayData?.tasks || [];
+  }, [hydrated, getTasksForDate, dateKey]);
+
   const MAX_TASKS_DISPLAYED = 3;
 
   if (!isSameMonth(props.date, props.displayMonth)) {
@@ -42,35 +50,55 @@ const CustomDayContent = (props: DayContentProps) => {
     );
   }
 
+  // Common day number element
+  const dayNumberElement = (
+    <div className="self-end text-xs font-medium text-foreground/80 mb-1">
+      {props.date.getDate()}
+    </div>
+  );
+
+  // Conditionally render task content based on hydration and task presence
+  let taskDisplayElement;
+  if (!hydrated || tasks.length === 0) {
+    // This structure is rendered by:
+    // 1. Server (tasks are empty as no localStorage)
+    // 2. Client initially (hydrated is false, tasks forced empty)
+    // 3. Client after hydration if tasks are genuinely empty
+    taskDisplayElement = (
+      <div className="flex-grow flex items-center justify-center">
+        <p className="text-xs text-muted-foreground/70">
+          {!hydrated ? 'Loading...' : 'No tasks'}
+        </p>
+      </div>
+    );
+  } else {
+    // This structure is rendered only after hydration AND if there are tasks
+    taskDisplayElement = (
+      <ScrollArea className="flex-grow h-0"> 
+        <ul className="space-y-1 text-xs">
+          {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
+            <li
+              key={task.id}
+              className={`truncate ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground/90'}`}
+              title={task.title}
+            >
+              {task.completed ? '✓' : '•'} {task.title}
+            </li>
+          ))}
+          {tasks.length > MAX_TASKS_DISPLAYED && (
+            <li className="text-muted-foreground text-xs">
+              + {tasks.length - MAX_TASKS_DISPLAYED} more
+            </li>
+          )}
+        </ul>
+      </ScrollArea>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full w-full p-1 text-left">
-      <div className="self-end text-xs font-medium text-foreground/80 mb-1">
-        {props.date.getDate()}
-      </div>
-      {tasks.length > 0 ? (
-        <ScrollArea className="flex-grow h-0"> 
-          <ul className="space-y-1 text-xs">
-            {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
-              <li
-                key={task.id}
-                className={`truncate ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground/90'}`}
-                title={task.title}
-              >
-                {task.completed ? '✓' : '•'} {task.title}
-              </li>
-            ))}
-            {tasks.length > MAX_TASKS_DISPLAYED && (
-              <li className="text-muted-foreground text-xs">
-                + {tasks.length - MAX_TASKS_DISPLAYED} more
-              </li>
-            )}
-          </ul>
-        </ScrollArea>
-      ) : (
-        <div className="flex-grow flex items-center justify-center">
-          <p className="text-xs text-muted-foreground/70">No tasks</p>
-        </div>
-      )}
+      {dayNumberElement}
+      {taskDisplayElement}
     </div>
   );
 };
@@ -81,7 +109,7 @@ export function CalendarView() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   const { 
-    tasksByDate, // Keep for daysWithTasksModifiers, if still needed for other logic
+    tasksByDate, 
     getTasksForDate, 
     addTask, 
     deleteTask, 
@@ -94,19 +122,16 @@ export function CalendarView() {
     return selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   }, [selectedDate]);
 
-  // This dailyTasksData is for the right-hand side panel.
-  // CustomDayContent fetches its own data for reactivity.
   const dailyTasksData = useMemo(() => {
     if (!formattedSelectedDate) return undefined;
     return getTasksForDate(formattedSelectedDate);
-  }, [formattedSelectedDate, getTasksForDate, tasksByDate]); // tasksByDate is included here to re-evaluate when underlying data changes for selected day panel
+  }, [formattedSelectedDate, getTasksForDate, tasksByDate]); 
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
   const dayOverridesTemplate: boolean = dailyTasksData?.overridesTemplate || false;
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  // Slider and scroll state
   const scrollableCalendarRef = useRef<HTMLDivElement>(null);
   const [sliderValue, setSliderValue] = useState(0);
   const [sliderMax, setSliderMax] = useState(100);
@@ -128,13 +153,11 @@ export function CalendarView() {
   }, []);
 
   useEffect(() => {
-    // Initial check and listen for resize
     updateScrollState();
     window.addEventListener('resize', updateScrollState);
     return () => window.removeEventListener('resize', updateScrollState);
-  }, [selectedDate, tasksByDate, updateScrollState]); // Re-check on month/task changes
+  }, [selectedDate, tasksByDate, updateScrollState]);
 
-  // Observe content changes in calendar (e.g. tasks loading)
   useEffect(() => {
     const observer = new MutationObserver(updateScrollState);
     if (scrollableCalendarRef.current) {
@@ -207,7 +230,7 @@ export function CalendarView() {
 
   return (
     <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-      <Card className="md:col-span-2 shadow-lg flex flex-col overflow-hidden"> {/* Added flex flex-col and overflow-hidden */}
+      <Card className="md:col-span-2 shadow-lg flex flex-col overflow-hidden">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
             <CalendarDays className="h-6 w-6 text-primary" /> Monthly Calendar
@@ -217,7 +240,7 @@ export function CalendarView() {
         <CardContent 
           ref={scrollableCalendarRef}
           className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto" 
-          style={{ maxHeight: '65vh' }} // Max height for scrollability
+          style={{ maxHeight: '65vh' }} 
           onScroll={handleScroll}
         >
           <Calendar
@@ -225,7 +248,6 @@ export function CalendarView() {
             selected={selectedDate}
             onSelect={(date) => {
               setSelectedDate(date);
-              // Slight delay to allow content to potentially rerender before scroll state update
               setTimeout(updateScrollState, 50); 
             }}
             className="rounded-md w-full"
@@ -268,7 +290,7 @@ export function CalendarView() {
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="flex flex-col h-[calc(100%-7rem)]"> {/* Adjusted height calculation if needed */}
+        <CardContent className="flex flex-col h-[calc(100%-7rem)]">
           <div className="mb-4 space-y-3">
             <div className="flex gap-2">
               <Input
@@ -314,7 +336,6 @@ export function CalendarView() {
                        <Select onValueChange={(templateId) => {
                           const selectedTemplate = templates.find(t => t.id === templateId);
                           if(selectedTemplate) {
-                            // Close the AlertDialog before applying, then apply
                             const cancelButton = document.querySelector('button[aria-label="Cancel"]') as HTMLElement | null;
                             if (cancelButton) cancelButton.click();
                             handleApplyTemplate(templateId, true);
@@ -381,5 +402,3 @@ export function CalendarView() {
     </div>
   );
 }
-
-    
