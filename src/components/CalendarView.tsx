@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, parseISO, isSameMonth } from 'date-fns';
 import { useAppStore } from '@/lib/store';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,7 +23,7 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Task } from '@/lib/types';
 import type { DayContentProps } from 'react-day-picker';
-import { Slider } from '@/components/ui/slider';
+// Slider import removed
 import { useHydration } from '@/hooks/useHydration'; 
 
 const CustomDayContent = (props: DayContentProps) => {
@@ -111,7 +111,7 @@ export function CalendarView() {
   
   const { 
     tasksByDate, 
-    getTasksForDate, // Kept for other parts of CalendarView, CustomDayContent uses direct subscription
+    getTasksForDate,
     addTask, 
     deleteTask, 
     toggleTaskCompletion,
@@ -125,7 +125,7 @@ export function CalendarView() {
 
   const dailyTasksData = useMemo(() => {
     if (!hydrated || !formattedSelectedDate) return undefined; 
-    return getTasksForDate(formattedSelectedDate); // Uses getTasksForDate for the side panel
+    return getTasksForDate(formattedSelectedDate);
   }, [hydrated, formattedSelectedDate, getTasksForDate, tasksByDate]); 
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
@@ -133,53 +133,13 @@ export function CalendarView() {
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  const scrollableCalendarRef = useRef<HTMLDivElement>(null);
-  const [sliderValue, setSliderValue] = useState(0);
-  const [sliderMax, setSliderMax] = useState(100);
-  const [isScrollable, setIsScrollable] = useState(false);
+  // Removed states and refs related to the custom slider:
+  // scrollableCalendarRef, sliderValue, setSliderValue, sliderMax, setSliderMax, isScrollable
 
-  const updateScrollState = useCallback(() => {
-    if (scrollableCalendarRef.current) {
-      const { scrollHeight, clientHeight } = scrollableCalendarRef.current;
-      const currentIsScrollable = scrollHeight > clientHeight;
-      setIsScrollable(currentIsScrollable);
-      if (currentIsScrollable) {
-        setSliderMax(scrollHeight - clientHeight);
-      } else {
-        setSliderMax(0);
-        setSliderValue(0); 
-        scrollableCalendarRef.current.scrollTop = 0;
-      }
-    }
-  }, []);
+  // Removed functions related to the custom slider:
+  // updateScrollState, handleScroll, handleSliderChange
 
-  useEffect(() => {
-    updateScrollState();
-    window.addEventListener('resize', updateScrollState);
-    return () => window.removeEventListener('resize', updateScrollState);
-  }, [selectedDate, tasksByDate, updateScrollState]);
-
-  useEffect(() => {
-    const observer = new MutationObserver(updateScrollState);
-    if (scrollableCalendarRef.current) {
-      observer.observe(scrollableCalendarRef.current, { childList: true, subtree: true });
-    }
-    return () => observer.disconnect();
-  }, [updateScrollState]);
-
-
-  const handleScroll = () => {
-    if (scrollableCalendarRef.current) {
-      setSliderValue(scrollableCalendarRef.current.scrollTop);
-    }
-  };
-
-  const handleSliderChange = (value: number) => {
-    setSliderValue(value);
-    if (scrollableCalendarRef.current) {
-      scrollableCalendarRef.current.scrollTop = value;
-    }
-  };
+  // Removed useEffects related to updateScrollState
 
   const handleAddTask = () => {
     if (!formattedSelectedDate || !newTaskTitle.trim()) {
@@ -240,17 +200,17 @@ export function CalendarView() {
           <CardDescription>Select a day to view and manage its tasks. Calendar cells show a preview of tasks.</CardDescription>
         </CardHeader>
         <CardContent 
-          ref={scrollableCalendarRef}
-          className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto" 
+          // ref removed as it was for the custom slider
+          className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto" // overflow-y-auto will provide browser scrollbar
           style={{ maxHeight: '65vh' }} 
-          onScroll={handleScroll}
+          // onScroll removed
         >
           <Calendar
             mode="single"
             selected={selectedDate}
             onSelect={(date) => {
               setSelectedDate(date);
-              setTimeout(updateScrollState, 50); 
+              // setTimeout(updateScrollState, 50); // Removed call to updateScrollState
             }}
             className="rounded-md w-full"
             modifiers={{ hasTasks: daysWithTasksModifiers }}
@@ -262,18 +222,7 @@ export function CalendarView() {
             }}
           />
         </CardContent>
-        {isScrollable && (
-          <div className="px-2 pb-2 md:px-4 md:pb-4 border-t border-border pt-2">
-            <Slider
-              value={[sliderValue]}
-              onValueChange={(valueArray) => handleSliderChange(valueArray[0])}
-              max={sliderMax}
-              step={1}
-              className="w-full"
-              aria-label="Scroll calendar vertically"
-            />
-          </div>
-        )}
+        {/* Custom Slider and its container div removed */}
       </Card>
 
       <Card className="md:col-span-1 shadow-lg">
