@@ -69,7 +69,7 @@ export function AppHeader() {
           <div className="flex items-center gap-2 md:gap-4">
             <Palette className="h-7 w-7 text-accent" />
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Habitual Calendar
+              Daily Scheduler
             </h1>
           </div>
 
