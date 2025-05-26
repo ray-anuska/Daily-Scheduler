@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, CalendarDays } from 'lucide-react';
+import { Trash2, PlusCircle, CalendarDays, X } from 'lucide-react'; // Added X icon
 import {
   Select,
   SelectContent,
@@ -26,14 +26,13 @@ import type { DayContentProps } from 'react-day-picker';
 import { useHydration } from '@/hooks/useHydration';
 
 interface CustomDayContentProps extends DayContentProps {
-  onTaskToggle: () => void; // Callback to notify parent about task changes
+  onTaskToggle: () => void; 
 }
 
 const CustomDayContent = (props: CustomDayContentProps) => {
   const hydrated = useHydration();
   const dateKey = format(props.date, 'yyyy-MM-dd');
   
-  // Subscribe directly to the tasks for this specific day
   const tasksForDay_store = useAppStore(state => state.tasksByDate[dateKey]?.tasks || []);
   
   const tasks = useMemo(() => {
@@ -41,11 +40,7 @@ const CustomDayContent = (props: CustomDayContentProps) => {
     return tasksForDay_store;
   }, [hydrated, tasksForDay_store]);
 
-  // This effect ensures re-render when tasksForDay_store (from Zustand) changes for THIS date.
   useEffect(() => {
-    // No operation needed here, the subscription in useAppStore and useMemo dependency
-    // on tasksForDay_store should trigger re-renders.
-    // This effect is primarily for clarity or if direct re-triggering becomes necessary.
   }, [tasksForDay_store]);
 
 
@@ -80,7 +75,7 @@ const CustomDayContent = (props: CustomDayContentProps) => {
     );
   } else {
     taskDisplayElement = (
-      <ScrollArea className="flex-grow h-0"> {/* h-0 needed for ScrollArea to take flex space */}
+      <ScrollArea className="flex-grow h-0"> 
         <ul className="space-y-1 text-xs">
           {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
             <li
@@ -111,9 +106,10 @@ const CustomDayContent = (props: CustomDayContentProps) => {
 
 interface CalendarViewProps {
   isTaskSidebarOpen: boolean;
+  setIsTaskSidebarOpen: (isOpen: boolean) => void;
 }
 
-export function CalendarView({ isTaskSidebarOpen }: CalendarViewProps) {
+export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: CalendarViewProps) {
   const hydrated = useHydration();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -142,7 +138,9 @@ export function CalendarView({ isTaskSidebarOpen }: CalendarViewProps) {
     if (isTaskSidebarOpen) {
       setCalendarFlexBasis(flexBasisBeforeSidebarClosed);
     } else {
-      if (calendarFlexBasis !== '100%') {
+      // Only update flexBasisBeforeSidebarClosed if the sidebar *was* open and is now closing
+      // and the current calendarFlexBasis is not already '100%' (which means it was already closed)
+      if (calendarFlexBasis !== '100%') { 
         setFlexBasisBeforeSidebarClosed(calendarFlexBasis);
       }
       setCalendarFlexBasis('100%');
@@ -183,7 +181,9 @@ export function CalendarView({ isTaskSidebarOpen }: CalendarViewProps) {
       
       const newBasis = `${newCalendarWidthPx}px`;
       setCalendarFlexBasis(newBasis);
-      setFlexBasisBeforeSidebarClosed(newBasis); 
+      if(isTaskSidebarOpen) { // Only update 'beforeClosed' if sidebar is actually open
+         setFlexBasisBeforeSidebarClosed(newBasis); 
+      }
     };
 
     const handleMouseUp = () => {
@@ -225,7 +225,6 @@ export function CalendarView({ isTaskSidebarOpen }: CalendarViewProps) {
 
   const handleTaskToggle = useCallback(() => {
     // This callback is mostly to satisfy the prop requirement for CustomDayContent.
-    // The actual re-render of CustomDayContent is handled by its internal Zustand subscription.
   }, []);
 
   const handleAddTask = () => {
@@ -297,7 +296,12 @@ export function CalendarView({ isTaskSidebarOpen }: CalendarViewProps) {
           <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={setSelectedDate}
+            onSelect={(date) => {
+              setSelectedDate(date);
+              if (date) {
+                setIsTaskSidebarOpen(true);
+              }
+            }}
             className="rounded-md w-full block" 
             modifiers={{ hasTasks: daysWithTasksModifiers }}
             modifiersClassNames={{
@@ -324,17 +328,26 @@ export function CalendarView({ isTaskSidebarOpen }: CalendarViewProps) {
           className="shadow-lg flex flex-col flex-grow overflow-hidden"
           style={{ minWidth: '250px' }}
         >
-          <CardHeader>
-            <CardTitle className="text-xl">
+          <CardHeader className="relative">
+            <CardTitle className="text-xl pr-10"> {/* Added pr-10 to avoid overlap with close button */}
               Tasks for: {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'No date selected'}
             </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-3 right-3 h-7 w-7" // Adjusted positioning and size
+              onClick={() => setIsTaskSidebarOpen(false)}
+              aria-label="Close task sidebar"
+            >
+              <X className="h-4 w-4" />
+            </Button>
             {hydrated && dailyTasksData && !dayOverridesTemplate && dailyTasksData.tasks.length > 0 && (
-              <CardDescription className="text-xs text-accent-foreground bg-accent/20 p-1 rounded-md">
+              <CardDescription className="text-xs text-accent-foreground bg-accent/20 p-1 rounded-md mt-1">
                 Tasks from template. Edit to customize.
               </CardDescription>
             )}
             {hydrated && dailyTasksData && dayOverridesTemplate && (
-              <CardDescription className="text-xs text-primary-foreground bg-primary/20 p-1 rounded-md">
+              <CardDescription className="text-xs text-primary-foreground bg-primary/20 p-1 rounded-md mt-1">
                 Customized tasks for this day.
               </CardDescription>
             )}

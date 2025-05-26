@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
 import { AuthPrompt } from '@/components/AuthPrompt';
-import { Settings, Palette, ListChecks, LogIn, LogOut, Sidebar } from 'lucide-react'; // Added Sidebar icon
+import { Settings, Palette, ListChecks, LogIn, LogOut } from 'lucide-react';
 import { useHydration } from '@/hooks/useHydration';
 import {
   DropdownMenu,
@@ -20,12 +20,7 @@ import {
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { TemplateManager } from '@/components/TemplateManager';
 
-interface AppHeaderProps {
-  isTaskSidebarOpen: boolean;
-  toggleTaskSidebar: () => void;
-}
-
-export function AppHeader({ isTaskSidebarOpen, toggleTaskSidebar }: AppHeaderProps) {
+export function AppHeader() {
   const hydrated = useHydration();
   const currentUser = useAppStore((state) => state.currentUser);
   const setCurrentUser = useAppStore((state) => state.setCurrentUser);
@@ -60,7 +55,6 @@ export function AppHeader({ isTaskSidebarOpen, toggleTaskSidebar }: AppHeaderPro
           <div className="flex items-center space-x-2 md:space-x-4">
             <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
             <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
-            <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
             <div className="w-9 h-9 bg-muted rounded-full animate-pulse"></div>
           </div>
         </div>
@@ -85,9 +79,6 @@ export function AppHeader({ isTaskSidebarOpen, toggleTaskSidebar }: AppHeaderPro
             </Button>
             <Button variant="ghost" size="icon" onClick={() => setTemplateManagerOpen(true)} aria-label="Manage Templates">
               <ListChecks className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={toggleTaskSidebar} aria-label="Toggle Task Sidebar">
-              <Sidebar className="h-5 w-5" />
             </Button>
 
             {currentUser ? (
