@@ -7,20 +7,17 @@ export interface Task {
 export interface DailyTasks {
   date: string; // YYYY-MM-DD
   tasks: Task[];
-  overridesTemplate?: boolean; 
+  overridesTemplate?: boolean;
 }
 
 export interface TaskTemplate {
   id: string;
   name: string;
   tasks: Pick<Task, 'title'>[]; // Template tasks only need titles
-  // Application rules can be added later e.g., applyTo: 'all' | 'range' | 'selected';
-  // dateRange?: { start: string; end: string }; 
-  // selectedDates?: string[]; 
 }
 
 export interface User {
-  id: string; 
+  id: string;
   name: string;
 }
 
@@ -48,7 +45,13 @@ export interface ThemeColors {
 
 
 export interface CustomTheme {
-  id: string;
+  id: string; // UUID for custom themes
   name: string;
-  colors: Partial<ThemeColors>; // Allow partial overrides, defaults will be from globals.css
+  colors: Partial<ThemeColors>;
+}
+
+export interface PredefinedTheme {
+  id: string; // readable identifier e.g., 'default_light', 'dark_mode'
+  name: string;
+  colors: ThemeColors; // Predefined themes have complete color sets
 }
