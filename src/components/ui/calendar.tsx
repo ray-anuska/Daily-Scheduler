@@ -33,26 +33,26 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "flex",
+        head_row: "grid grid-cols-7 w-full gap-1", // Changed from flex to grid
         head_cell:
-          "text-muted-foreground rounded-md w-full font-normal text-[0.8rem] flex-1", // Adjusted w-9 to w-full and flex-1
-        row: "flex w-full mt-2 gap-1", // Added gap-1 for spacing between cells
+          "text-muted-foreground rounded-md font-normal text-[0.8rem] p-2 text-center", // Adjusted for grid layout
+        row: "grid grid-cols-7 w-full mt-2 gap-1", // Changed from flex to grid
         cell: cn(
-          "min-h-[7rem] h-auto flex-1 p-1 relative flex flex-col items-start justify-start text-sm", // Changed w-full to flex-1, min-h adjusted
+          "min-h-[9rem] h-auto p-1 relative flex flex-col items-start justify-start text-sm", // Removed flex-1
           "[&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent",
           "first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-          "border rounded-md bg-card hover:bg-muted/50 transition-colors" // Added border and bg for individual cells
+          "border rounded-md bg-card hover:bg-muted/50 transition-colors"
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-full w-full p-1 font-normal aria-selected:opacity-100 flex flex-col items-start justify-start" // Changed sizing and alignment
+          "h-full w-full p-1 font-normal aria-selected:opacity-100 flex flex-col items-start justify-start"
         ),
         day_range_end: "day-range-end",
         day_selected:
           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
         day_today: "bg-accent text-accent-foreground",
         day_outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground", // Make outside days less prominent
+          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
         day_disabled: "text-muted-foreground opacity-50",
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
@@ -60,10 +60,10 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className: iconClassName, ...iconProps }) => ( // Renamed className to avoid conflict
+        IconLeft: ({ className: iconClassName, ...iconProps }) => (
           <ChevronLeft className={cn("h-4 w-4", iconClassName)} {...iconProps} />
         ),
-        IconRight: ({ className: iconClassName, ...iconProps }) => ( // Renamed className to avoid conflict
+        IconRight: ({ className: iconClassName, ...iconProps }) => (
           <ChevronRight className={cn("h-4 w-4", iconClassName)} {...iconProps} />
         ),
       }}
@@ -74,4 +74,3 @@ function Calendar({
 Calendar.displayName = "Calendar"
 
 export { Calendar }
-
