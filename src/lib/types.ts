@@ -8,6 +8,7 @@ export interface DailyTasks {
   date: string; // YYYY-MM-DD
   tasks: Task[];
   overridesTemplate?: boolean;
+  dayNote?: string; // User-editable note for the day
 }
 
 export interface TaskTemplate {

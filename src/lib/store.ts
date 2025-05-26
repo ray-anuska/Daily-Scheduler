@@ -27,8 +27,8 @@ export const defaultThemeColors: ThemeColors = {
   border: "240 20% 85%", 
   input: "240 25% 92%", 
   ring: "300 40% 75%", 
-  taskPendingBackground: "0 0% 92%", // Light gray background for pending
-  taskCompletedBackground: "120 70% 90%", // Light green background for completed
+  taskPendingBackground: "0 0% 92%", 
+  taskCompletedBackground: "120 70% 90%", 
 };
 
 export const predefinedThemes: PredefinedTheme[] = [
@@ -41,6 +41,7 @@ export const predefinedThemes: PredefinedTheme[] = [
     id: 'default_dark',
     name: 'Default Dark',
     colors: {
+      ...defaultThemeColors, // Start with defaults then override
       background: "240 10% 3.9%",
       foreground: "0 0% 98%",
       card: "240 10% 3.9%",
@@ -60,14 +61,15 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "240 10% 14.9%",
       input: "240 10% 14.9%",
       ring: "300 40% 65%",
-      taskPendingBackground: "240 5% 18%", // Darker gray/blue background for pending
-      taskCompletedBackground: "120 40% 22%", // Darker green background for completed
+      taskPendingBackground: "240 5% 18%", 
+      taskCompletedBackground: "120 40% 22%", 
     },
   },
   {
     id: 'sky_blue',
     name: 'Sky Blue',
     colors: {
+      ...defaultThemeColors,
       background: "210 40% 98%", 
       foreground: "210 40% 10%", 
       card: "207 60% 97%",       
@@ -81,14 +83,15 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "210 30% 90%",   
       input: "210 30% 95%",    
       ring: "207 90% 60%",
-      taskPendingBackground: "210 50% 92%", // Very light blue background
-      taskCompletedBackground: "130 60% 90%", // Very light contrasting green/teal background
+      taskPendingBackground: "210 50% 92%", 
+      taskCompletedBackground: "130 60% 90%", 
     }
   },
   {
     id: 'cheery_yellow',
     name: 'Cheery Yellow',
     colors: {
+      ...defaultThemeColors,
       background: "50 30% 97%",    
       foreground: "50 20% 20%",    
       card: "45 80% 98%",          
@@ -102,14 +105,15 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "50 25% 90%",    
       input: "50 25% 95%",     
       ring: "45 100% 65%",
-      taskPendingBackground: "50 70% 93%", // Very light yellow background
-      taskCompletedBackground: "90 60% 90%",  // Very light lime green background
+      taskPendingBackground: "50 70% 93%", 
+      taskCompletedBackground: "90 60% 90%",  
     }
   },
   {
     id: 'forest_green',
     name: 'Forest Green',
     colors: {
+      ...defaultThemeColors,
       background: "120 10% 96%",   
       foreground: "120 25% 10%",   
       card: "120 20% 98%",         
@@ -123,8 +127,8 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "120 10% 88%",    
       input: "120 10% 92%",     
       ring: "120 39% 45%",
-      taskPendingBackground: "120 20% 92%", // Very light muted green background
-      taskCompletedBackground: "90 40% 88%",   // Very light complementary yellow-green background
+      taskPendingBackground: "120 20% 92%", 
+      taskCompletedBackground: "90 40% 88%",   
     }
   }
 ];
@@ -140,6 +144,7 @@ interface AppState {
   deleteTask: (date: string, taskId: string) => void;
   toggleTaskCompletion: (date: string, taskId: string) => void;
   setTasksForDate: (date: string, tasks: Task[], overridesTemplate?: boolean) => void;
+  setDayNote: (date: string, note: string) => void;
 
   templates: TaskTemplate[];
   addTemplate: (template: Omit<TaskTemplate, 'id'>) => TaskTemplate;
@@ -165,7 +170,7 @@ export const useAppStore = create<AppState>()(
       tasksByDate: {},
       getTasksForDate: (date) => get().tasksByDate[date],
       addTask: (date, taskTitle) => set((state) => {
-        const dayTasks = state.tasksByDate[date] || { date, tasks: [], overridesTemplate: true };
+        const dayTasks = state.tasksByDate[date] || { date, tasks: [], overridesTemplate: true, dayNote: '' };
         const newTask: Task = { id: generateTaskId(), title: taskTitle, completed: false };
         return {
           tasksByDate: {
@@ -218,12 +223,33 @@ export const useAppStore = create<AppState>()(
           },
         };
       }),
-      setTasksForDate: (date, tasks, overridesTemplate = true) => set(state => ({
-        tasksByDate: {
-          ...state.tasksByDate,
-          [date]: { date, tasks, overridesTemplate }
+      setTasksForDate: (date, tasks, overridesTemplate = true) => set(state => {
+        const currentDayData = state.tasksByDate[date];
+        return {
+            tasksByDate: {
+                ...state.tasksByDate,
+                [date]: { 
+                    date, 
+                    tasks, 
+                    overridesTemplate, 
+                    dayNote: overridesTemplate ? currentDayData?.dayNote : '' // Clear note if template is applied
+                }
+            }
         }
-      })),
+      }),
+      setDayNote: (date, note) => set(state => {
+        const dayTasks = state.tasksByDate[date] || { date, tasks: [], dayNote: '' };
+        return {
+          tasksByDate: {
+            ...state.tasksByDate,
+            [date]: {
+              ...dayTasks,
+              dayNote: note,
+              overridesTemplate: true, // Setting a note implies customization
+            },
+          },
+        };
+      }),
 
       templates: [],
       addTemplate: (templateData) => {
@@ -253,7 +279,7 @@ export const useAppStore = create<AppState>()(
           completed: false,
         }));
 
-        get().setTasksForDate(date, newTasksFromTemplate, false);
+        get().setTasksForDate(date, newTasksFromTemplate, false); // sets overridesTemplate to false
       },
 
       activeThemeIdentifier: 'default_light', 

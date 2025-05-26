@@ -82,7 +82,7 @@ const CustomDayContent = (props: CustomDayContentProps) => {
           {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
             <li
               key={task.id}
-              className="p-1 rounded-sm" // Box styling
+              className="p-1 rounded-sm" 
               style={{
                 backgroundColor: task.completed
                   ? 'hsl(var(--task-completed-background))'
@@ -133,7 +133,8 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     deleteTask,
     toggleTaskCompletion,
     templates,
-    applyTemplateToDate
+    applyTemplateToDate,
+    setDayNote,
   } = useAppStore();
 
   const [calendarFlexBasis, setCalendarFlexBasis] = useState('66%');
@@ -145,6 +146,9 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
 
   const dragStartXRef = useRef(0);
   const dragStartWidthPxRef = useRef(0);
+
+  const [editingDayNoteFor, setEditingDayNoteFor] = useState<string | null>(null);
+  const [currentDayNoteText, setCurrentDayNoteText] = useState<string>("");
 
   useEffect(() => {
     if (isTaskSidebarOpen) {
@@ -290,6 +294,13 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
       .map(dateStr => parseISO(dateStr));
   }, [hydrated, tasksByDate]);
 
+  const handleSaveDayNote = () => {
+    if (editingDayNoteFor && formattedSelectedDate === editingDayNoteFor) {
+      setDayNote(formattedSelectedDate, currentDayNoteText);
+    }
+    setEditingDayNoteFor(null);
+  };
+
 
   return (
     <div ref={containerRef} className="flex flex-1 flex-row w-full overflow-hidden">
@@ -311,6 +322,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
               setSelectedDate(date);
               if (date) {
                 setIsTaskSidebarOpen(true);
+                setEditingDayNoteFor(null); // Close note editor when changing day
               }
             }}
             className="rounded-md w-full block" 
@@ -352,16 +364,40 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
             >
               <X className="h-4 w-4" />
             </Button>
-            {hydrated && dailyTasksData && !dayOverridesTemplate && dailyTasksData.tasks.length > 0 && (
-              <CardDescription className="text-xs text-accent-foreground bg-accent/20 p-1 rounded-md mt-1">
-                Tasks from template. Edit to customize.
-              </CardDescription>
+            
+            {hydrated && dailyTasksData && formattedSelectedDate && (
+              dayOverridesTemplate ? (
+                editingDayNoteFor === formattedSelectedDate ? (
+                  <Input
+                    value={currentDayNoteText}
+                    onChange={(e) => setCurrentDayNoteText(e.target.value)}
+                    onBlur={handleSaveDayNote}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveDayNote()}
+                    placeholder="Add a note for this day..."
+                    className="text-xs p-1 h-auto mt-1 bg-background border-primary ring-primary focus-visible:ring-primary"
+                    autoFocus
+                  />
+                ) : (
+                  <CardDescription
+                    className="text-xs text-primary-foreground bg-primary/20 p-1 rounded-md mt-1 cursor-pointer hover:bg-primary/30 transition-colors"
+                    onClick={() => {
+                      setEditingDayNoteFor(formattedSelectedDate);
+                      setCurrentDayNoteText(dailyTasksData.dayNote || "");
+                    }}
+                    title="Click to edit note"
+                  >
+                    {dailyTasksData.dayNote || "Customized tasks for this day. (Click to edit note)"}
+                  </CardDescription>
+                )
+              ) : (
+                tasksForSelectedDay.length > 0 && (
+                  <CardDescription className="text-xs text-accent-foreground bg-accent/20 p-1 rounded-md mt-1">
+                    Tasks from template. Edit to customize.
+                  </CardDescription>
+                )
+              )
             )}
-            {hydrated && dailyTasksData && dayOverridesTemplate && (
-              <CardDescription className="text-xs text-primary-foreground bg-primary/20 p-1 rounded-md mt-1">
-                Customized tasks for this day.
-              </CardDescription>
-            )}
+
           </CardHeader>
           <CardContent className="flex flex-col flex-grow h-0">
             <div className="mb-4 space-y-3">
@@ -450,7 +486,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
                           id={`task-label-${task.id}`}
                           className={cn(
                             "text-sm", 
-                            task.completed ? 'line-through text-muted-foreground' : 'text-foreground' // More distinct styling for completion
+                            task.completed ? 'line-through text-muted-foreground' : 'text-foreground' 
                           )}
                         >
                           {task.title}
