@@ -54,6 +54,10 @@ body {
     --sidebar-accent-foreground: 240 20% 25%;
     --sidebar-border: 240 30% 80%;
     --sidebar-ring: 300 40% 75%;
+
+    /* Task status colors */
+    --task-pending-text: 0 0% 45%;
+    --task-completed-text: 145 60% 35%;
   }
 
   .dark {
@@ -100,6 +104,10 @@ body {
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 240 10% 15.9%;
     --sidebar-ring: 300 40% 65%;
+
+    /* Task status colors for dark mode */
+    --task-pending-text: 0 0% 63.9%;
+    --task-completed-text: 145 50% 65%;
   }
 }
 
@@ -113,7 +121,6 @@ body {
 }
 
 /* Style for days with tasks in react-day-picker */
-/* This class is not strictly necessary anymore as tasks are rendered directly */
 .day-with-tasks-modifier:not(.rdp-day_outside) {
   /* Example: slightly different background if still desired */
   /* background-color: hsl(var(--primary) / 0.1); */
@@ -127,20 +134,18 @@ body {
 
 .rdp-day_selected:not(.rdp-day_outside) span,
 .rdp-day_selected:not(.rdp-day_outside) div,
-.rdp-day_selected:not(.rdp-day_outside) li,
+.rdp-day_selected:not(.rdp-day_outside) li, /* General li for selected day */
 .rdp-day_selected:not(.rdp-day_outside) p {
-   color: hsl(var(--primary-foreground)) !important;
+   color: hsl(var(--primary-foreground)); /* Removed !important */
 }
 
-/* Ensure selected day text (date number, tasks) is primary-foreground color */
-.rdp-button[aria-selected="true"] > div > div, /* Day number */
-.rdp-button[aria-selected="true"] > div ul li, /* Task list items */
-.rdp-button[aria-selected="true"] > div p /* "No tasks" text */
- {
-  color: hsl(var(--primary-foreground)) !important;
+/* Ensure selected day text (date number) is primary-foreground color */
+.rdp-button[aria-selected="true"] > div > div {
+  color: hsl(var(--primary-foreground)); /* Removed !important */
 }
 
 /* Override line-through color for completed tasks on selected day */
+/* This might not be needed if specific task colors have higher specificity or direct style */
 .rdp-button[aria-selected="true"] > div ul li.line-through {
-  color: hsl(var(--primary-foreground) / 0.7) !important; /* Slightly lighter for muted effect */
+  /* color: hsl(var(--primary-foreground) / 0.7); */ /* Removed !important, specific task colors will apply */
 }

@@ -21,17 +21,20 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Palette, Edit3, PlusCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ThemeSwitcherProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Ensure all keys from ThemeColors are included, especially new ones
 const themeColorKeys = Object.keys(defaultThemeColors) as Array<keyof ThemeColors>;
+
 
 const commonNamedColors: Array<{ name: string; hsl: string }> = [
   { name: "White", hsl: "0 0% 100%" },
@@ -48,10 +51,12 @@ const commonNamedColors: Array<{ name: string; hsl: string }> = [
   { name: "Sunny Yellow", hsl: "54 100% 70%" },
   { name: "Warm Orange", hsl: "30 100% 65%" },
   { name: "Crimson Red", hsl: "0 80% 60%" },
+  { name: "Grass Green", hsl: "120 60% 40%" },
+  { name: "Light Steel Blue", hsl: "210 30% 70%" },
 ];
 
 const getOptionsForKey = (key: keyof ThemeColors, baseColors: ThemeColors = defaultThemeColors): Array<{ label: string; value: string }> => {
-  const defaultValueForKey = baseColors[key];
+  const defaultValueForKey = baseColors[key] || defaultThemeColors[key]; // Fallback to absolute default
   const defaultOption = { label: `Default (${defaultValueForKey})`, value: defaultValueForKey };
 
   const standardOptions = commonNamedColors.map(c => ({
@@ -129,7 +134,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
 
     themeColorKeys.forEach(key => {
       const colorValue = fullColorsToEdit[key];
-      const options = getOptionsForKey(key, defaultThemeColors); // Use default for finding options
+      const options = getOptionsForKey(key, defaultThemeColors); 
       const matchingOption = options.find(opt => opt.value === colorValue && opt.value !== "__CUSTOM__");
 
       if (matchingOption) {
@@ -154,7 +159,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     for (const key of themeColorKeys) {
       const colorValue = formThemeColors[key];
       if (colorValue && !/^\d{1,3}\s\d{1,3}(\.\d+)?%\s\d{1,3}(\.\d+)?%$/.test(colorValue)) {
-        toast({ title: 'Error', description: `Invalid HSL format for ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}. Expected 'H S% L%'.`, variant: 'destructive' });
+        toast({ title: 'Error', description: `Invalid HSL format for ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}. Expected 'H S% L%'. Value: '${colorValue}'`, variant: 'destructive' });
         return;
       }
       if (colorValue) {
@@ -164,7 +169,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     
     const themeData = {
       name: formThemeName.trim(),
-      colors: finalThemeColors as ThemeColors,
+      colors: finalThemeColors as ThemeColors, // Cast as ThemeColors, assuming all keys are now present due to merge with defaults
     };
 
     if (editingTheme) {
@@ -172,7 +177,6 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
       toast({ title: 'Theme Updated', description: `${themeData.name} has been updated and set as active.` });
     } else {
       const addedTheme = addCustomTheme(themeData);
-      // setActiveThemeIdentifier(addedTheme.id); // addCustomTheme now handles this
       toast({ title: 'Theme Added', description: `${addedTheme.name} has been added and set as active.` });
     }
     resetFormToCreateMode();
@@ -182,6 +186,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     setSelectedColorOptions(prev => ({ ...prev, [colorKey]: selectedValue }));
     if (selectedValue === "__CUSTOM__") {
       setCustomHSLInputsVisible(prev => ({ ...prev, [colorKey]: true }));
+      // If switching to custom, and current formThemeColors[colorKey] is not a valid HSL or undefined, set it to default
       if(formThemeColors[colorKey] === undefined || !/^\d{1,3}\s\d{1,3}(\.\d+)?%\s\d{1,3}(\.\d+)?%$/.test(formThemeColors[colorKey]!)){
          setFormThemeColors(prev => ({...prev, [colorKey]: defaultThemeColors[colorKey]}));
       }
@@ -262,7 +267,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                   {themeColorKeys.map((key) => (
                     <div key={key} className="space-y-1">
                       <Label htmlFor={`theme-select-${key}`} className="capitalize text-sm">
-                        {key.replace(/([A-Z])/g, ' $1')}
+                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                       </Label>
                       <div className="flex items-center gap-2">
                         <Select
@@ -294,7 +299,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end mt-4">
                   {editingTheme && (
                     <Button variant="outline" onClick={resetFormToCreateMode}>Cancel Edit</Button>
                   )}
@@ -314,7 +319,10 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                   {customThemes.map((theme) => (
                     <div
                       key={theme.id}
-                      className={`flex items-center justify-between p-3 border rounded-md transition-colors ${editingTheme?.id === theme.id ? 'bg-primary/20' : 'bg-muted/50'}`}
+                      className={cn(
+                        "flex items-center justify-between p-3 border rounded-md transition-colors",
+                        editingTheme?.id === theme.id ? 'bg-primary/20' : 'bg-card hover:bg-muted/50'
+                      )}
                     >
                       <span className="font-medium">{theme.name}</span>
                       <div className="flex items-center gap-2">
@@ -340,7 +348,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                           variant="destructive"
                           size="icon"
                           onClick={() => {
-                            if (editingTheme?.id === theme.id) resetFormToCreateMode(); // Reset form if editing deleted theme
+                            if (editingTheme?.id === theme.id) resetFormToCreateMode(); 
                             deleteCustomTheme(theme.id);
                             toast({ title: 'Theme Deleted', description: `${theme.name} has been deleted.` });
                           }}
@@ -357,7 +365,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
             )}
           </div>
         </div>
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="pt-4 border-t mt-auto">
           <Button variant="outline" onClick={() => { onOpenChange(false); resetFormToCreateMode(); }}>Close</Button>
         </DialogFooter>
       </DialogContent>

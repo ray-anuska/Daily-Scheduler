@@ -8,32 +8,34 @@ const generateTemplateId = () => `template_${Date.now()}_${Math.random().toStrin
 const generateThemeId = () => `theme_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
 export const defaultThemeColors: ThemeColors = {
-  background: "0 0% 96.1%", // Light Gray #F5F5F5
-  foreground: "240 10% 10%", // Darker for text on light gray
-  card: "0 0% 100%", // White cards
-  cardForeground: "240 10% 10%", // Match foreground
-  popover: "0 0% 100%", // White popovers
-  popoverForeground: "240 10% 10%", // Match foreground
-  primary: "240 60% 94.1%", // Soft Lavender #E6E6FA
-  primaryForeground: "240 20% 25%", // Dark blue/purple for text on soft lavender
-  secondary: "240 30% 90%", // Lighter muted lavender for secondary elements
-  secondaryForeground: "240 15% 20%", // Darker for secondary text
-  muted: "240 20% 92%", // Very light lavender for muted backgrounds
-  mutedForeground: "240 10% 45%", // Softer text for muted
-  accent: "300 26% 86%", // Dusty Rose #D8BFD8
-  accentForeground: "300 20% 25%", // Dark magenta/purple for text on dusty rose
+  background: "0 0% 96.1%", 
+  foreground: "240 10% 10%", 
+  card: "0 0% 100%", 
+  cardForeground: "240 10% 10%", 
+  popover: "0 0% 100%", 
+  popoverForeground: "240 10% 10%", 
+  primary: "240 60% 94.1%", 
+  primaryForeground: "240 20% 25%", 
+  secondary: "240 30% 90%", 
+  secondaryForeground: "240 15% 20%", 
+  muted: "240 20% 92%", 
+  mutedForeground: "240 10% 45%", 
+  accent: "300 26% 86%", 
+  accentForeground: "300 20% 25%", 
   destructive: "0 84.2% 60.2%",
   destructiveForeground: "0 0% 98%",
-  border: "240 20% 85%", // Muted lavender for borders
-  input: "240 25% 92%", // Lighter muted lavender for input backgrounds
-  ring: "300 40% 75%", // More saturated dusty rose for rings
+  border: "240 20% 85%", 
+  input: "240 25% 92%", 
+  ring: "300 40% 75%", 
+  taskPendingText: "0 0% 45%", // Default for light: Medium Gray
+  taskCompletedText: "145 60% 35%", // Default for light: Green
 };
 
 export const predefinedThemes: PredefinedTheme[] = [
   {
     id: 'default_light',
     name: 'Default Light',
-    colors: { ...defaultThemeColors },
+    colors: { ...defaultThemeColors }, // Inherits defaults including new task colors
   },
   {
     id: 'default_dark',
@@ -58,26 +60,30 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "240 10% 14.9%",
       input: "240 10% 14.9%",
       ring: "300 40% 65%",
+      taskPendingText: "0 0% 63.9%", // Light gray for dark mode
+      taskCompletedText: "145 50% 65%", // Lighter green for dark mode
     },
   },
   {
     id: 'sky_blue',
     name: 'Sky Blue',
     colors: {
-      ...defaultThemeColors,
-      background: "210 40% 98%", // Very light blue
-      foreground: "210 40% 10%", // Dark blue
-      card: "207 60% 97%",       // Extremely light blue (almost white)
-      cardForeground: "210 40% 10%", // Dark blue
-      popover: "207 60% 97%",    // Extremely light blue (almost white)
-      popoverForeground: "210 40% 10%", // Dark blue
-      primary: "207 90% 54%",   // Sky Blue
-      primaryForeground: "0 0% 100%", // White
-      accent: "187 70% 40%",   // Slightly deeper blue/teal
-      accentForeground: "0 0% 100%", // White
-      border: "210 30% 90%",   // Light blue
-      input: "210 30% 95%",    // Very light blue for input background
-      ring: "207 90% 60%",    // Sky blue for ring
+      ...defaultThemeColors, // Start with defaults to ensure all keys
+      background: "210 40% 98%", 
+      foreground: "210 40% 10%", 
+      card: "207 60% 97%",       
+      cardForeground: "210 40% 10%", 
+      popover: "207 60% 97%",    
+      popoverForeground: "210 40% 10%", 
+      primary: "207 90% 54%",   
+      primaryForeground: "0 0% 100%", 
+      accent: "187 70% 40%",   
+      accentForeground: "0 0% 100%", 
+      border: "210 30% 90%",   
+      input: "210 30% 95%",    
+      ring: "207 90% 60%",
+      taskPendingText: "210 30% 40%", // Muted dark blue
+      taskCompletedText: "130 50% 40%", // Contrasting green
     }
   },
   {
@@ -85,19 +91,21 @@ export const predefinedThemes: PredefinedTheme[] = [
     name: 'Cheery Yellow',
     colors: {
       ...defaultThemeColors,
-      background: "50 30% 97%",    // Very light yellow
-      foreground: "50 20% 20%",    // Dark brownish yellow
-      card: "45 80% 98%",          // Extremely light yellow
-      cardForeground: "50 20% 20%", // Dark brownish yellow
-      popover: "45 80% 98%",       // Extremely light yellow
-      popoverForeground: "50 20% 20%", // Dark brownish yellow
-      primary: "45 100% 58%",  // Cheery Yellow
-      primaryForeground: "45 30% 20%", // Darker yellow/brown for text on primary
-      accent: "30 100% 65%",   // Warm Orange
-      accentForeground: "0 0% 100%", // White
-      border: "50 25% 90%",    // Light yellow
-      input: "50 25% 95%",     // Very light yellow for input background
-      ring: "45 100% 65%",     // Cheery yellow for ring
+      background: "50 30% 97%",    
+      foreground: "50 20% 20%",    
+      card: "45 80% 98%",          
+      cardForeground: "50 20% 20%", 
+      popover: "45 80% 98%",       
+      popoverForeground: "50 20% 20%", 
+      primary: "45 100% 58%",  
+      primaryForeground: "45 30% 20%", 
+      accent: "30 100% 65%",   
+      accentForeground: "0 0% 100%", 
+      border: "50 25% 90%",    
+      input: "50 25% 95%",     
+      ring: "45 100% 65%",
+      taskPendingText: "45 20% 45%", // Muted brownish-yellow
+      taskCompletedText: "120 60% 30%", // Darker contrasting green
     }
   },
   {
@@ -105,19 +113,21 @@ export const predefinedThemes: PredefinedTheme[] = [
     name: 'Forest Green',
     colors: {
       ...defaultThemeColors,
-      background: "120 10% 96%",   // Very light green
-      foreground: "120 25% 10%",   // Dark green
-      card: "120 20% 98%",         // Extremely light green
-      cardForeground: "120 25% 10%",// Dark green
-      popover: "120 20% 98%",      // Extremely light green
-      popoverForeground: "120 25% 10%",// Dark green
-      primary: "120 39% 39%",   // Forest Green
-      primaryForeground: "0 0% 100%", // White
-      accent: "100 40% 55%",   // Lighter, slightly yellowish green
-      accentForeground: "120 25% 15%", // Dark green for text on accent
-      border: "120 10% 88%",    // Light green
-      input: "120 10% 92%",     // Very light green for input background
-      ring: "120 39% 45%",      // Forest green for ring
+      background: "120 10% 96%",   
+      foreground: "120 25% 10%",   
+      card: "120 20% 98%",         
+      cardForeground: "120 25% 10%",
+      popover: "120 20% 98%",      
+      popoverForeground: "120 25% 10%",
+      primary: "120 39% 39%",   
+      primaryForeground: "0 0% 100%", 
+      accent: "100 40% 55%",   
+      accentForeground: "120 25% 15%", 
+      border: "120 10% 88%",    
+      input: "120 10% 92%",     
+      ring: "120 39% 45%",
+      taskPendingText: "120 15% 50%", // Muted mid-green
+      taskCompletedText: "80 60% 55%",  // Brighter, distinct lime/yellow-green
     }
   }
 ];
@@ -249,35 +259,35 @@ export const useAppStore = create<AppState>()(
         get().setTasksForDate(date, newTasksFromTemplate, false);
       },
 
-      activeThemeIdentifier: 'default_light', // Default to the light theme
+      activeThemeIdentifier: 'default_light', 
       customThemes: [],
       setActiveThemeIdentifier: (identifier) => set({ activeThemeIdentifier: identifier }),
       addCustomTheme: (themeData) => {
         const newTheme: CustomTheme = { ...themeData, id: generateThemeId() };
         set((state) => ({
           customThemes: [...state.customThemes, newTheme],
-          activeThemeIdentifier: newTheme.id, // Set new custom theme as active
+          activeThemeIdentifier: newTheme.id, 
         }));
         return newTheme;
       },
       updateCustomTheme: (updatedTheme) => set((state) => ({
         customThemes: state.customThemes.map(t => t.id === updatedTheme.id ? updatedTheme : t),
-        activeThemeIdentifier: updatedTheme.id, // Ensure updated theme is active
+        activeThemeIdentifier: updatedTheme.id, 
       })),
       deleteCustomTheme: (themeId) => set((state) => ({
         customThemes: state.customThemes.filter(t => t.id !== themeId),
-        // If the deleted theme was active, revert to default
         activeThemeIdentifier: state.activeThemeIdentifier === themeId ? 'default_light' : state.activeThemeIdentifier,
       })),
       getActiveThemeColors: () => {
         const { activeThemeIdentifier, customThemes } = get();
         const predefined = predefinedThemes.find(pt => pt.id === activeThemeIdentifier);
         if (predefined) {
-          return { ...defaultThemeColors, ...predefined.colors }; // Ensure all keys are present by merging with default
+          return { ...defaultThemeColors, ...predefined.colors }; 
         }
         const custom = customThemes.find(ct => ct.id === activeThemeIdentifier);
         if (custom) {
-          return { ...defaultThemeColors, ...custom.colors }; // Ensure all keys by merging
+          // For custom themes, ensure all keys are present by merging with default, then with custom's partial colors
+          return { ...defaultThemeColors, ...custom.colors }; 
         }
         return defaultThemeColors; // Fallback to absolute default
       },

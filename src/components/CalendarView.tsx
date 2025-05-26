@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, CalendarDays, X } from 'lucide-react'; // Added X icon
+import { Trash2, PlusCircle, CalendarDays, X } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { Task } from '@/lib/types';
 import type { DayContentProps } from 'react-day-picker';
 import { useHydration } from '@/hooks/useHydration';
+import { cn } from '@/lib/utils';
 
 interface CustomDayContentProps extends DayContentProps {
   onTaskToggle: () => void; 
@@ -81,7 +82,12 @@ const CustomDayContent = (props: CustomDayContentProps) => {
           {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
             <li
               key={task.id}
-              className={`truncate ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground/90'}`}
+              className={cn('truncate', { 'line-through': task.completed })}
+              style={{ 
+                color: task.completed 
+                  ? 'hsl(var(--task-completed-text))' 
+                  : 'hsl(var(--task-pending-text))' 
+              }}
               title={task.title}
             >
               {task.completed ? '✓' : '•'} {task.title}
@@ -235,7 +241,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     addTask(formattedSelectedDate, newTaskTitle.trim());
     setNewTaskTitle('');
     toast({ title: 'Task Added' });
-    handleTaskToggle(); // Ensures CustomDayContent re-evaluates if its props change
+    handleTaskToggle(); 
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -437,7 +443,15 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
                         <Label
                           htmlFor={`task-${task.id}`}
                           id={`task-label-${task.id}`}
-                          className={`text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}
+                          className={cn(
+                            "text-sm", 
+                            task.completed ? 'line-through' : ''
+                          )}
+                          style={{ 
+                            color: task.completed 
+                              ? 'hsl(var(--task-completed-text))' 
+                              : 'hsl(var(--task-pending-text))' 
+                          }}
                         >
                           {task.title}
                         </Label>
