@@ -19,7 +19,8 @@ export interface TaskTemplate {
 
 export interface User {
   id: string;
-  name: string;
+  name: string; // Will be derived from email for now
+  email: string;
 }
 
 export interface ThemeColors {

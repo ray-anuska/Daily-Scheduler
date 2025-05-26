@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
 import { AuthPrompt } from '@/components/AuthPrompt';
-import { Settings, Palette, ListChecks, LogIn, LogOut } from 'lucide-react';
+import { Settings, Palette, ListChecks, LogIn, LogOut, User as UserIcon } from 'lucide-react'; // Added UserIcon
 import { useHydration } from '@/hooks/useHydration';
 import {
   DropdownMenu,
@@ -97,7 +97,7 @@ export function AppHeader() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{currentUser.name}</p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        Local User
+                        {currentUser.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -110,7 +110,7 @@ export function AppHeader() {
               </DropdownMenu>
             ) : (
               <Button variant="outline" onClick={() => setAuthPromptOpen(true)}>
-                <LogIn className="mr-2 h-4 w-4" /> Login
+                <UserIcon className="mr-2 h-4 w-4" /> Login
               </Button>
             )}
           </div>

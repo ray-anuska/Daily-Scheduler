@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,50 +24,69 @@ interface AuthPromptProps {
 export function AuthPrompt({ open, onOpenChange }: AuthPromptProps) {
   const hydrated = useHydration();
   const setCurrentUser = useAppStore((state) => state.setCurrentUser);
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    if (name.trim()) {
+    if (email.trim() && password.trim()) { // Basic check for email and password presence
+      const nameFromEmail = email.split('@')[0];
       const newUser: User = {
-        id: crypto.randomUUID(), 
-        name: name.trim(),
+        id: crypto.randomUUID(),
+        name: nameFromEmail,
+        email: email.trim(),
       };
       setCurrentUser(newUser);
       onOpenChange(false);
-      setName('');
+      setEmail('');
+      setPassword('');
     }
   };
 
   if (!hydrated) {
-    return null; 
+    return null;
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] bg-card text-card-foreground rounded-lg shadow-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Welcome to Habitual Calendar</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Welcome to Daily Scheduler</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Please enter your name to personalize your experience. Your data is stored locally on this device.
+            Please enter your email and password. For now, this is a demo login; your data is stored locally.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-6">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
+            <Label htmlFor="email" className="text-right">
+              Email
             </Label>
             <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="col-span-3"
-              placeholder="Your Name"
-              aria-label="Your Name"
+              placeholder="your@email.com"
+              aria-label="Your Email"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="password" className="text-right">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="col-span-3"
+              placeholder="Your Password"
+              aria-label="Your Password"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={handleLogin} disabled={!name.trim()} className="w-full sm:w-auto">
+          <Button type="submit" onClick={handleLogin} disabled={!email.trim() || !password.trim()} className="w-full sm:w-auto">
             Continue
           </Button>
         </DialogFooter>
