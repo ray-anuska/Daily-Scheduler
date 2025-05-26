@@ -28,16 +28,19 @@ import { useHydration } from '@/hooks/useHydration';
 
 const CustomDayContent = (props: DayContentProps) => {
   const hydrated = useHydration(); 
-  const { getTasksForDate } = useAppStore();
   const dateKey = format(props.date, 'yyyy-MM-dd');
   
+  // Subscribe directly to the tasks for this specific dateKey from the store
+  const tasksForDay_store = useAppStore(state => state.tasksByDate[dateKey]?.tasks || []);
+
+  // The tasks to render, dependent on hydration and the direct store subscription
   const tasks = useMemo(() => {
     if (!hydrated) {
       return []; 
     }
-    const dayData = getTasksForDate(dateKey);
-    return dayData?.tasks || [];
-  }, [hydrated, getTasksForDate, dateKey]);
+    return tasksForDay_store;
+  }, [hydrated, tasksForDay_store]);
+
 
   const MAX_TASKS_DISPLAYED = 3;
 
@@ -56,15 +59,19 @@ const CustomDayContent = (props: DayContentProps) => {
   );
 
   let taskDisplayElement;
-  if (!hydrated || tasks.length === 0) {
+  if (!hydrated && tasks.length === 0) { // Show loading if not hydrated and no tasks initially
     taskDisplayElement = (
-      <div className="flex-grow flex items-center justify-center">
-        <p className="text-xs text-muted-foreground/70">
-          {!hydrated ? 'Loading...' : 'No tasks'}
-        </p>
+       <div className="flex-grow flex items-center justify-center">
+        <p className="text-xs text-muted-foreground/70">Loading...</p>
       </div>
     );
-  } else {
+  } else if (hydrated && tasks.length === 0) { // Show "No tasks" if hydrated and no tasks
+     taskDisplayElement = (
+      <div className="flex-grow flex items-center justify-center">
+        <p className="text-xs text-muted-foreground/70">No tasks</p>
+      </div>
+    );
+  } else { // Display tasks if hydrated and tasks exist
     taskDisplayElement = (
       <ScrollArea className="flex-grow h-0"> 
         <ul className="space-y-1 text-xs">
@@ -87,6 +94,7 @@ const CustomDayContent = (props: DayContentProps) => {
     );
   }
 
+
   return (
     <div className="flex flex-col h-full w-full p-1 text-left">
       {dayNumberElement}
@@ -103,7 +111,7 @@ export function CalendarView() {
   
   const { 
     tasksByDate, 
-    getTasksForDate, 
+    getTasksForDate, // Kept for other parts of CalendarView, CustomDayContent uses direct subscription
     addTask, 
     deleteTask, 
     toggleTaskCompletion,
@@ -116,8 +124,8 @@ export function CalendarView() {
   }, [selectedDate]);
 
   const dailyTasksData = useMemo(() => {
-    if (!hydrated || !formattedSelectedDate) return undefined; // Defer until hydrated
-    return getTasksForDate(formattedSelectedDate);
+    if (!hydrated || !formattedSelectedDate) return undefined; 
+    return getTasksForDate(formattedSelectedDate); // Uses getTasksForDate for the side panel
   }, [hydrated, formattedSelectedDate, getTasksForDate, tasksByDate]); 
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
@@ -212,7 +220,7 @@ export function CalendarView() {
   };
 
   const daysWithTasksModifiers = useMemo(() => {
-    if (!hydrated) return []; // Defer until hydrated
+    if (!hydrated) return [];
     return Object.keys(tasksByDate)
       .filter(dateStr => {
         const dayData = tasksByDate[dateStr];
@@ -331,7 +339,7 @@ export function CalendarView() {
                           const selectedTemplate = templates.find(t => t.id === templateId);
                           if(selectedTemplate) {
                             const cancelButton = document.querySelector('button[aria-label="Cancel"]') as HTMLElement | null;
-                            if (cancelButton) cancelButton.click();
+                            if (cancelButton) cancelButton.click(); // Close the dialog
                             handleApplyTemplate(templateId, true);
                           }
                         }}>

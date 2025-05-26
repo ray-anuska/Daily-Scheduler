@@ -38,7 +38,7 @@ function Calendar({
           "text-muted-foreground rounded-md w-full font-normal text-[0.8rem] flex-1", // Adjusted w-9 to w-full and flex-1
         row: "flex w-full mt-2 gap-1", // Added gap-1 for spacing between cells
         cell: cn(
-          "min-h-[9rem] h-auto w-full p-1 relative flex flex-col items-start justify-start text-sm", // Changed sizing and alignment
+          "min-h-[7rem] h-auto w-full p-1 relative flex flex-col items-start justify-start text-sm", // Changed min-h from 9rem to 7rem
           "[&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent",
           "first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
           "border rounded-md bg-card hover:bg-muted/50 transition-colors" // Added border and bg for individual cells
@@ -74,3 +74,4 @@ function Calendar({
 Calendar.displayName = "Calendar"
 
 export { Calendar }
+
