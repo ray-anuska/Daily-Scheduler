@@ -16,7 +16,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -103,126 +102,124 @@ export function TemplateManager({ open, onOpenChange }: TemplateManagerProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-hidden min-h-0"> {/* Added min-h-0 */}
-          <ScrollArea className="h-full pr-6">
-            <div className="space-y-6 py-4"> {/* Moved py-4 here */}
-              {editingTemplate ? (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Edit Template: {editingTemplate.name}</h3>
-                  <div className="space-y-3 p-4 border rounded-md bg-muted/30">
-                    <div>
-                      <Label htmlFor="edit-template-name">Template Name</Label>
-                      <Input
-                        id="edit-template-name"
-                        value={editTemplateName}
-                        onChange={(e) => setEditTemplateName(e.target.value)}
-                        className="mt-1 bg-background"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-template-tasks">Task Titles (one per line)</Label>
-                      <Textarea
-                        id="edit-template-tasks"
-                        value={editTemplateTasks}
-                        onChange={(e) => setEditTemplateTasks(e.target.value)}
-                        rows={5}
-                        className="mt-1 bg-background"
-                        placeholder="E.g.&#10;Morning Workout&#10;Read for 30 minutes&#10;Plan tomorrow's tasks"
-                      />
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" onClick={handleCancelEdit}>Cancel</Button>
-                      <Button onClick={handleSaveEdit}>Save Changes</Button>
-                    </div>
+        <div className="flex-grow min-h-0 overflow-y-auto"> {/* Native scroll here */}
+          <div className="space-y-6 py-4 pr-4"> {/* Added pr-4 for scrollbar, content moves here */}
+            {editingTemplate ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Edit Template: {editingTemplate.name}</h3>
+                <div className="space-y-3 p-4 border rounded-md bg-muted/30">
+                  <div>
+                    <Label htmlFor="edit-template-name">Template Name</Label>
+                    <Input
+                      id="edit-template-name"
+                      value={editTemplateName}
+                      onChange={(e) => setEditTemplateName(e.target.value)}
+                      className="mt-1 bg-background"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-template-tasks">Task Titles (one per line)</Label>
+                    <Textarea
+                      id="edit-template-tasks"
+                      value={editTemplateTasks}
+                      onChange={(e) => setEditTemplateTasks(e.target.value)}
+                      rows={5}
+                      className="mt-1 bg-background"
+                      placeholder="E.g.&#10;Morning Workout&#10;Read for 30 minutes&#10;Plan tomorrow's tasks"
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={handleCancelEdit}>Cancel</Button>
+                    <Button onClick={handleSaveEdit}>Save Changes</Button>
                   </div>
                 </div>
-              ) : (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Create New Template</h3>
-                  <div className="space-y-3 p-4 border rounded-md">
-                    <div>
-                      <Label htmlFor="new-template-name">Template Name</Label>
-                      <Input
-                        id="new-template-name"
-                        value={newTemplateName}
-                        onChange={(e) => setNewTemplateName(e.target.value)}
-                        placeholder="E.g., Weekday Routine"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="new-template-tasks">Task Titles (one per line)</Label>
-                      <Textarea
-                        id="new-template-tasks"
-                        value={newTemplateTasks}
-                        onChange={(e) => setNewTemplateTasks(e.target.value)}
-                        rows={3}
-                        className="mt-1"
-                        placeholder="E.g.&#10;Morning Workout&#10;Read for 30 minutes&#10;Plan tomorrow's tasks"
-                      />
-                    </div>
-                    <Button onClick={handleAddTemplate} className="w-full sm:w-auto">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Add Template
-                    </Button>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Create New Template</h3>
+                <div className="space-y-3 p-4 border rounded-md">
+                  <div>
+                    <Label htmlFor="new-template-name">Template Name</Label>
+                    <Input
+                      id="new-template-name"
+                      value={newTemplateName}
+                      onChange={(e) => setNewTemplateName(e.target.value)}
+                      placeholder="E.g., Weekday Routine"
+                      className="mt-1"
+                    />
                   </div>
-                </div>
-              )}
-
-
-              {templates.length > 0 && <Separator />}
-
-              {templates.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Existing Templates</h3>
-                  <div className="space-y-3">
-                    {templates.map((template) => (
-                      <Card key={template.id} className={editingTemplate?.id === template.id ? 'opacity-50' : ''}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                          <CardTitle className="text-base">{template.name}</CardTitle>
-                          {!editingTemplate && (
-                            <div className="flex items-center gap-2">
-                               <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleStartEdit(template)}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                onClick={() => {
-                                  deleteTemplate(template.id);
-                                  toast({ title: 'Template Deleted', description: `${template.name} has been deleted.` });
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </CardHeader>
-                        <CardContent>
-                          {template.tasks.length > 0 ? (
-                            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                              {template.tasks.slice(0, 3).map((task, index) => (
-                                <li key={index}>{task.title}</li>
-                              ))}
-                              {template.tasks.length > 3 && <li>...and {template.tasks.length - 3} more.</li>}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">No tasks in this template.</p>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div>
+                    <Label htmlFor="new-template-tasks">Task Titles (one per line)</Label>
+                    <Textarea
+                      id="new-template-tasks"
+                      value={newTemplateTasks}
+                      onChange={(e) => setNewTemplateTasks(e.target.value)}
+                      rows={3}
+                      className="mt-1"
+                      placeholder="E.g.&#10;Morning Workout&#10;Read for 30 minutes&#10;Plan tomorrow's tasks"
+                    />
                   </div>
+                  <Button onClick={handleAddTemplate} className="w-full sm:w-auto">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Template
+                  </Button>
                 </div>
-              )}
-               {templates.length === 0 && !editingTemplate && (
-                <p className="text-center text-muted-foreground py-4">No templates created yet. Add one above!</p>
-              )}
-            </div>
-          </ScrollArea>
+              </div>
+            )}
+
+
+            {templates.length > 0 && <Separator />}
+
+            {templates.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Existing Templates</h3>
+                <div className="space-y-3">
+                  {templates.map((template) => (
+                    <Card key={template.id} className={editingTemplate?.id === template.id ? 'opacity-50' : ''}>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-base">{template.name}</CardTitle>
+                        {!editingTemplate && (
+                          <div className="flex items-center gap-2">
+                             <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStartEdit(template)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => {
+                                deleteTemplate(template.id);
+                                toast({ title: 'Template Deleted', description: `${template.name} has been deleted.` });
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        {template.tasks.length > 0 ? (
+                          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                            {template.tasks.slice(0, 3).map((task, index) => (
+                              <li key={index}>{task.title}</li>
+                            ))}
+                            {template.tasks.length > 3 && <li>...and {template.tasks.length - 3} more.</li>}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No tasks in this template.</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+             {templates.length === 0 && !editingTemplate && (
+              <p className="text-center text-muted-foreground py-4">No templates created yet. Add one above!</p>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
