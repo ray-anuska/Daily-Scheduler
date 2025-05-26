@@ -9,8 +9,6 @@ import type { ThemeColors } from '@/lib/types';
 
 function applyThemeToDocument(colors: ThemeColors | Partial<ThemeColors>) {
   const root = document.documentElement;
-  // Ensure all keys present by merging with defaultThemeColors, 
-  // then with the provided theme's colors which might be partial for custom themes initially.
   const completeColors = { ...defaultThemeColors, ...colors };
 
   Object.entries(completeColors).forEach(([key, value]) => {
@@ -18,19 +16,23 @@ function applyThemeToDocument(colors: ThemeColors | Partial<ThemeColors>) {
     if (value) {
       root.style.setProperty(cssVarName, value);
     } else {
-      // Fallback to absolute default if somehow a value is missing (shouldn't happen with the merge)
       const fallbackValue = defaultThemeColors[key as keyof ThemeColors];
       if (fallbackValue) {
          root.style.setProperty(cssVarName, fallbackValue);
       } else {
-         root.style.removeProperty(cssVarName); // Should not happen
+         root.style.removeProperty(cssVarName); 
       }
     }
   });
 
-  // Sidebar colors derivation (can be fine-tuned)
-  const sidebarPrimary = completeColors.primary; // Already merged, so will have a value
-  const sidebarAccent = completeColors.accent;   // Already merged
+  // Ensure new task background CSS variables are set
+  root.style.setProperty('--task-pending-background', completeColors.taskPendingBackground);
+  root.style.setProperty('--task-completed-background', completeColors.taskCompletedBackground);
+
+
+  // Sidebar colors derivation
+  const sidebarPrimary = completeColors.primary; 
+  const sidebarAccent = completeColors.accent;   
 
   const sidebarBackground = completeColors.background ? `hsl(${completeColors.background.split(' ')[0]} ${parseFloat(completeColors.background.split(' ')[1]) * 0.95}% ${parseFloat(completeColors.background.split(' ')[2]) * 0.90}%)` : defaultThemeColors.card; 
   root.style.setProperty('--sidebar-background', sidebarBackground);

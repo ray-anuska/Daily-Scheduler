@@ -32,7 +32,6 @@ interface ThemeSwitcherProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Ensure all keys from ThemeColors are included, especially new ones
 const themeColorKeys = Object.keys(defaultThemeColors) as Array<keyof ThemeColors>;
 
 
@@ -40,8 +39,16 @@ const commonNamedColors: Array<{ name: string; hsl: string }> = [
   { name: "White", hsl: "0 0% 100%" },
   { name: "Off-White", hsl: "0 0% 98%" },
   { name: "Light Gray", hsl: "0 0% 96.1%" },
+  { name: "Lighter Gray", hsl: "0 0% 92%" },
+  { name: "Soft Gray", hsl: "0 0% 90%" },
+  { name: "Very Light Green", hsl: "120 70% 90%" },
+  { name: "Very Light Blue", hsl: "210 50% 92%" },
+  { name: "Very Light Yellow", hsl: "50 70% 93%" },
+  { name: "Very Light Muted Green", hsl: "120 20% 92%" },
   { name: "Medium Gray", hsl: "0 0% 50%" },
   { name: "Dark Gray", hsl: "0 0% 20%" },
+  { name: "Darker Gray Blue", hsl: "240 5% 18%" },
+  { name: "Darker Green", hsl: "120 40% 22%" },
   { name: "Near Black", hsl: "240 10% 3.9%"},
   { name: "Black", hsl: "0 0% 0%" },
   { name: "Soft Lavender", hsl: "240 60% 94.1%" },
@@ -56,7 +63,7 @@ const commonNamedColors: Array<{ name: string; hsl: string }> = [
 ];
 
 const getOptionsForKey = (key: keyof ThemeColors, baseColors: ThemeColors = defaultThemeColors): Array<{ label: string; value: string }> => {
-  const defaultValueForKey = baseColors[key] || defaultThemeColors[key]; // Fallback to absolute default
+  const defaultValueForKey = baseColors[key] || defaultThemeColors[key]; 
   const defaultOption = { label: `Default (${defaultValueForKey})`, value: defaultValueForKey };
 
   const standardOptions = commonNamedColors.map(c => ({
@@ -68,6 +75,14 @@ const getOptionsForKey = (key: keyof ThemeColors, baseColors: ThemeColors = defa
   const combinedOptions = [defaultOption, ...standardOptions, customOption];
   const uniqueOptionsByValue = Array.from(new Map(combinedOptions.map(item => [item.value, item])).values());
   return uniqueOptionsByValue;
+};
+
+const getLabelForKey = (key: keyof ThemeColors): string => {
+  switch (key) {
+    case 'taskPendingBackground': return 'Task Pending Background';
+    case 'taskCompletedBackground': return 'Task Completed Background';
+    default: return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  }
 };
 
 
@@ -159,7 +174,8 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     for (const key of themeColorKeys) {
       const colorValue = formThemeColors[key];
       if (colorValue && !/^\d{1,3}\s\d{1,3}(\.\d+)?%\s\d{1,3}(\.\d+)?%$/.test(colorValue)) {
-        toast({ title: 'Error', description: `Invalid HSL format for ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}. Expected 'H S% L%'. Value: '${colorValue}'`, variant: 'destructive' });
+        const label = getLabelForKey(key);
+        toast({ title: 'Error', description: `Invalid HSL format for ${label}. Expected 'H S% L%'. Value: '${colorValue}'`, variant: 'destructive' });
         return;
       }
       if (colorValue) {
@@ -169,7 +185,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     
     const themeData = {
       name: formThemeName.trim(),
-      colors: finalThemeColors as ThemeColors, // Cast as ThemeColors, assuming all keys are now present due to merge with defaults
+      colors: finalThemeColors as ThemeColors, 
     };
 
     if (editingTheme) {
@@ -186,7 +202,6 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     setSelectedColorOptions(prev => ({ ...prev, [colorKey]: selectedValue }));
     if (selectedValue === "__CUSTOM__") {
       setCustomHSLInputsVisible(prev => ({ ...prev, [colorKey]: true }));
-      // If switching to custom, and current formThemeColors[colorKey] is not a valid HSL or undefined, set it to default
       if(formThemeColors[colorKey] === undefined || !/^\d{1,3}\s\d{1,3}(\.\d+)?%\s\d{1,3}(\.\d+)?%$/.test(formThemeColors[colorKey]!)){
          setFormThemeColors(prev => ({...prev, [colorKey]: defaultThemeColors[colorKey]}));
       }
@@ -211,7 +226,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto min-h-0">
+        <div className="flex-grow overflow-y-auto min-h-0 pr-4"> {/* Ensure pr-4 for scrollbar space */}
           <div className="space-y-6 p-4">
             <div>
               <Label htmlFor="active-theme-select" className="text-sm font-medium">Active Theme</Label>
@@ -267,7 +282,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                   {themeColorKeys.map((key) => (
                     <div key={key} className="space-y-1">
                       <Label htmlFor={`theme-select-${key}`} className="capitalize text-sm">
-                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        {getLabelForKey(key)}
                       </Label>
                       <div className="flex items-center gap-2">
                         <Select
@@ -275,7 +290,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                           onValueChange={(value) => handleColorOptionChange(key, value)}
                         >
                           <SelectTrigger id={`theme-select-${key}`} className="flex-grow bg-background">
-                            <SelectValue placeholder={`Select ${key}...`} />
+                            <SelectValue placeholder={`Select ${getLabelForKey(key)}...`} />
                           </SelectTrigger>
                           <SelectContent>
                             {getOptionsForKey(key, editingTheme ? { ...defaultThemeColors, ...editingTheme.colors } : defaultThemeColors).map(option => (
@@ -292,7 +307,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                             onChange={(e) => handleCustomHSLInputChange(key, e.target.value)}
                             placeholder={defaultThemeColors[key]}
                             className="w-full md:w-auto flex-grow bg-background"
-                            aria-label={`${key} HSL value`}
+                            aria-label={`${getLabelForKey(key)} HSL value`}
                           />
                         )}
                       </div>

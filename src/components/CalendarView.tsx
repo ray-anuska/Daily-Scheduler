@@ -78,23 +78,28 @@ const CustomDayContent = (props: CustomDayContentProps) => {
   } else {
     taskDisplayElement = (
       <ScrollArea className="flex-grow h-0"> 
-        <ul className="space-y-1 text-xs">
+        <ul className="space-y-0.5 text-xs"> {/* Reduced space-y for tighter packing */}
           {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
             <li
               key={task.id}
-              className={cn('truncate', { 'line-through': task.completed })}
-              style={{ 
-                color: task.completed 
-                  ? 'hsl(var(--task-completed-text))' 
-                  : 'hsl(var(--task-pending-text))' 
+              className="p-1 rounded-sm" // Box styling
+              style={{
+                backgroundColor: task.completed
+                  ? 'hsl(var(--task-completed-background))'
+                  : 'hsl(var(--task-pending-background))',
               }}
               title={task.title}
             >
-              {task.completed ? '✓' : '•'} {task.title}
+              <span 
+                style={{ color: 'hsl(var(--card-foreground))' }}
+                className={cn('truncate', { 'line-through': task.completed })}
+              >
+                {task.completed ? '✓' : '•'} {task.title}
+              </span>
             </li>
           ))}
           {tasks.length > MAX_TASKS_DISPLAYED && (
-            <li className="text-muted-foreground text-xs">
+            <li className="text-muted-foreground text-xs mt-1">
               + {tasks.length - MAX_TASKS_DISPLAYED} more
             </li>
           )}
@@ -229,8 +234,8 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   const handleTaskToggle = useCallback(() => {
-    // This callback is mostly to satisfy the prop requirement for CustomDayContent.
-    // It can also be used to trigger a re-render of this component if needed.
+    // This callback forces a re-render of parts of CalendarView if needed,
+    // and also ensures CustomDayContent (which uses this prop) re-evaluates.
   }, []);
 
   const handleAddTask = () => {
@@ -445,13 +450,8 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
                           id={`task-label-${task.id}`}
                           className={cn(
                             "text-sm", 
-                            task.completed ? 'line-through' : ''
+                            task.completed ? 'line-through text-muted-foreground' : 'text-foreground' // More distinct styling for completion
                           )}
-                          style={{ 
-                            color: task.completed 
-                              ? 'hsl(var(--task-completed-text))' 
-                              : 'hsl(var(--task-pending-text))' 
-                          }}
                         >
                           {task.title}
                         </Label>

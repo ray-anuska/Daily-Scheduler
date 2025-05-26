@@ -41,8 +41,8 @@ export interface ThemeColors {
   cardForeground: string; // HSL string
   popover: string;    // HSL string
   popoverForeground: string; // HSL string
-  taskPendingText: string; // HSL string for pending tasks
-  taskCompletedText: string; // HSL string for completed tasks
+  taskPendingBackground: string; // HSL string for background of pending task boxes
+  taskCompletedBackground: string; // HSL string for background of completed task boxes
 }
 
 

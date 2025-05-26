@@ -27,15 +27,15 @@ export const defaultThemeColors: ThemeColors = {
   border: "240 20% 85%", 
   input: "240 25% 92%", 
   ring: "300 40% 75%", 
-  taskPendingText: "0 0% 45%", // Default for light: Medium Gray
-  taskCompletedText: "145 60% 35%", // Default for light: Green
+  taskPendingBackground: "0 0% 92%", // Light gray background for pending
+  taskCompletedBackground: "120 70% 90%", // Light green background for completed
 };
 
 export const predefinedThemes: PredefinedTheme[] = [
   {
     id: 'default_light',
     name: 'Default Light',
-    colors: { ...defaultThemeColors }, // Inherits defaults including new task colors
+    colors: { ...defaultThemeColors }, 
   },
   {
     id: 'default_dark',
@@ -60,15 +60,14 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "240 10% 14.9%",
       input: "240 10% 14.9%",
       ring: "300 40% 65%",
-      taskPendingText: "0 0% 63.9%", // Light gray for dark mode
-      taskCompletedText: "145 50% 65%", // Lighter green for dark mode
+      taskPendingBackground: "240 5% 18%", // Darker gray/blue background for pending
+      taskCompletedBackground: "120 40% 22%", // Darker green background for completed
     },
   },
   {
     id: 'sky_blue',
     name: 'Sky Blue',
     colors: {
-      ...defaultThemeColors, // Start with defaults to ensure all keys
       background: "210 40% 98%", 
       foreground: "210 40% 10%", 
       card: "207 60% 97%",       
@@ -82,15 +81,14 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "210 30% 90%",   
       input: "210 30% 95%",    
       ring: "207 90% 60%",
-      taskPendingText: "210 30% 40%", // Muted dark blue
-      taskCompletedText: "130 50% 40%", // Contrasting green
+      taskPendingBackground: "210 50% 92%", // Very light blue background
+      taskCompletedBackground: "130 60% 90%", // Very light contrasting green/teal background
     }
   },
   {
     id: 'cheery_yellow',
     name: 'Cheery Yellow',
     colors: {
-      ...defaultThemeColors,
       background: "50 30% 97%",    
       foreground: "50 20% 20%",    
       card: "45 80% 98%",          
@@ -104,15 +102,14 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "50 25% 90%",    
       input: "50 25% 95%",     
       ring: "45 100% 65%",
-      taskPendingText: "45 20% 45%", // Muted brownish-yellow
-      taskCompletedText: "120 60% 30%", // Darker contrasting green
+      taskPendingBackground: "50 70% 93%", // Very light yellow background
+      taskCompletedBackground: "90 60% 90%",  // Very light lime green background
     }
   },
   {
     id: 'forest_green',
     name: 'Forest Green',
     colors: {
-      ...defaultThemeColors,
       background: "120 10% 96%",   
       foreground: "120 25% 10%",   
       card: "120 20% 98%",         
@@ -126,8 +123,8 @@ export const predefinedThemes: PredefinedTheme[] = [
       border: "120 10% 88%",    
       input: "120 10% 92%",     
       ring: "120 39% 45%",
-      taskPendingText: "120 15% 50%", // Muted mid-green
-      taskCompletedText: "80 60% 55%",  // Brighter, distinct lime/yellow-green
+      taskPendingBackground: "120 20% 92%", // Very light muted green background
+      taskCompletedBackground: "90 40% 88%",   // Very light complementary yellow-green background
     }
   }
 ];
@@ -150,7 +147,7 @@ interface AppState {
   deleteTemplate: (templateId: string) => void;
   applyTemplateToDate: (templateId: string, date: string, forceOverride?: boolean) => void;
 
-  activeThemeIdentifier: string; // ID of the active theme (predefined or custom UUID), defaults to 'default_light'
+  activeThemeIdentifier: string; 
   customThemes: CustomTheme[];
   setActiveThemeIdentifier: (identifier: string) => void;
   addCustomTheme: (theme: Omit<CustomTheme, 'id'>) => CustomTheme;
@@ -286,10 +283,9 @@ export const useAppStore = create<AppState>()(
         }
         const custom = customThemes.find(ct => ct.id === activeThemeIdentifier);
         if (custom) {
-          // For custom themes, ensure all keys are present by merging with default, then with custom's partial colors
           return { ...defaultThemeColors, ...custom.colors }; 
         }
-        return defaultThemeColors; // Fallback to absolute default
+        return defaultThemeColors; 
       },
     }),
     {
