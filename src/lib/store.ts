@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { DailyTasks, TaskTemplate, User, CustomTheme, Task, ThemeColors, PredefinedTheme } from './types';
@@ -63,18 +64,20 @@ export const predefinedThemes: PredefinedTheme[] = [
     id: 'sky_blue',
     name: 'Sky Blue',
     colors: {
-      ...defaultThemeColors, // Start with defaults and override
-      primary: "207 90% 54%",
-      primaryForeground: "0 0% 100%",
-      accent: "187 70% 40%",
-      accentForeground: "0 0% 100%",
-      background: "210 40% 98%",
-      foreground: "210 40% 10%",
-      card: "210 30% 100%",
-      cardForeground: "210 40% 10%",
-      border: "210 30% 90%",
-      input: "210 30% 95%",
-      ring: "207 90% 60%",
+      ...defaultThemeColors,
+      background: "210 40% 98%", // Very light blue
+      foreground: "210 40% 10%", // Dark blue
+      card: "207 60% 97%",       // Extremely light blue (almost white)
+      cardForeground: "210 40% 10%", // Dark blue
+      popover: "207 60% 97%",    // Extremely light blue (almost white)
+      popoverForeground: "210 40% 10%", // Dark blue
+      primary: "207 90% 54%",   // Sky Blue
+      primaryForeground: "0 0% 100%", // White
+      accent: "187 70% 40%",   // Slightly deeper blue/teal
+      accentForeground: "0 0% 100%", // White
+      border: "210 30% 90%",   // Light blue
+      input: "210 30% 95%",    // Very light blue for input background
+      ring: "207 90% 60%",    // Sky blue for ring
     }
   },
   {
@@ -82,17 +85,19 @@ export const predefinedThemes: PredefinedTheme[] = [
     name: 'Cheery Yellow',
     colors: {
       ...defaultThemeColors,
-      primary: "45 100% 58%",
-      primaryForeground: "45 30% 20%",
-      accent: "30 100% 65%",
-      accentForeground: "0 0% 100%",
-      background: "50 30% 97%",
-      foreground: "50 20% 20%",
-      card: "50 20% 100%",
-      cardForeground: "50 20% 20%",
-      border: "50 25% 90%",
-      input: "50 25% 95%",
-      ring: "45 100% 65%",
+      background: "50 30% 97%",    // Very light yellow
+      foreground: "50 20% 20%",    // Dark brownish yellow
+      card: "45 80% 98%",          // Extremely light yellow
+      cardForeground: "50 20% 20%", // Dark brownish yellow
+      popover: "45 80% 98%",       // Extremely light yellow
+      popoverForeground: "50 20% 20%", // Dark brownish yellow
+      primary: "45 100% 58%",  // Cheery Yellow
+      primaryForeground: "45 30% 20%", // Darker yellow/brown for text on primary
+      accent: "30 100% 65%",   // Warm Orange
+      accentForeground: "0 0% 100%", // White
+      border: "50 25% 90%",    // Light yellow
+      input: "50 25% 95%",     // Very light yellow for input background
+      ring: "45 100% 65%",     // Cheery yellow for ring
     }
   },
   {
@@ -100,17 +105,19 @@ export const predefinedThemes: PredefinedTheme[] = [
     name: 'Forest Green',
     colors: {
       ...defaultThemeColors,
-      primary: "120 39% 39%", // Darker green
-      primaryForeground: "0 0% 100%",
-      accent: "100 40% 55%", // Lighter, slightly yellowish green
-      accentForeground: "120 25% 15%",
-      background: "120 10% 96%",
-      foreground: "120 25% 10%",
-      card: "120 5% 100%",
-      cardForeground: "120 25% 10%",
-      border: "120 10% 88%",
-      input: "120 10% 92%",
-      ring: "120 39% 45%",
+      background: "120 10% 96%",   // Very light green
+      foreground: "120 25% 10%",   // Dark green
+      card: "120 20% 98%",         // Extremely light green
+      cardForeground: "120 25% 10%",// Dark green
+      popover: "120 20% 98%",      // Extremely light green
+      popoverForeground: "120 25% 10%",// Dark green
+      primary: "120 39% 39%",   // Forest Green
+      primaryForeground: "0 0% 100%", // White
+      accent: "100 40% 55%",   // Lighter, slightly yellowish green
+      accentForeground: "120 25% 15%", // Dark green for text on accent
+      border: "120 10% 88%",    // Light green
+      input: "120 10% 92%",     // Very light green for input background
+      ring: "120 39% 45%",      // Forest green for ring
     }
   }
 ];
