@@ -1,11 +1,12 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
 import { AuthPrompt } from '@/components/AuthPrompt';
-import { Settings, Palette, ListChecks, LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { Settings, Palette, ListChecks, LogIn, LogOut } from 'lucide-react';
 import { useHydration } from '@/hooks/useHydration';
 import {
   DropdownMenu,
@@ -14,30 +15,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
-
-// Placeholder components for dialogs - to be implemented later
-const ThemeSwitcherDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void; }) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent>
-      <DialogHeader><DialogTitle>Theme Settings</DialogTitle></DialogHeader>
-      <p>Theme customization will be available here.</p>
-    </DialogContent>
-  </Dialog>
-);
-
-const TemplateManagerDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void; }) => (
-   <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent>
-      <DialogHeader><DialogTitle>Task Templates</DialogTitle></DialogHeader>
-      <p>Template management will be available here.</p>
-    </DialogContent>
-  </Dialog>
-);
-
-// Import actual Dialog components if not already available globally
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+// Import actual implemented dialogs
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { TemplateManager } from '@/components/TemplateManager';
 
 
 export function AppHeader() {
@@ -66,11 +48,19 @@ export function AppHeader() {
   };
 
   if (!hydrated) {
+    // Skeleton loader for header
     return (
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary-foreground bg-primary px-3 py-1 rounded-md">Habitual Calendar</h1>
-          <div className="w-10 h-10 bg-muted rounded-full animate-pulse"></div> {/* Skeleton for avatar */}
+        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Palette className="h-7 w-7 text-accent opacity-50 animate-pulse" />
+            <div className="h-7 w-48 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
+            <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
+            <div className="w-9 h-9 bg-muted rounded-full animate-pulse"></div>
+          </div>
         </div>
       </header>
     );
@@ -78,16 +68,16 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b bg-card">
+      <header className="sticky top-0 z-40 w-full border-b bg-card shadow-sm">
         <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0 px-4 md:px-6">
           <div className="flex items-center gap-2 md:gap-4">
             <Palette className="h-7 w-7 text-accent" />
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Habitual Calendar
             </h1>
           </div>
 
-          <div className="flex flex-1 items-center justify-end space-x-2 md:space-x-4">
+          <div className="flex flex-1 items-center justify-end space-x-1 md:space-x-2">
             <Button variant="ghost" size="icon" onClick={() => setThemeSwitcherOpen(true)} aria-label="Customize Theme">
               <Settings className="h-5 w-5" />
             </Button>
@@ -99,10 +89,8 @@ export function AppHeader() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9">
-                      {/* Placeholder for actual avatar image if feature is added */}
-                      {/* <AvatarImage src="/avatars/01.png" alt={currentUser.name} /> */}
-                      <AvatarFallback className="bg-primary text-primary-foreground">
+                    <Avatar className="h-9 w-9 border">
+                      <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                         {getInitials(currentUser.name)}
                       </AvatarFallback>
                     </Avatar>
@@ -133,8 +121,9 @@ export function AppHeader() {
         </div>
       </header>
       <AuthPrompt open={authPromptOpen} onOpenChange={setAuthPromptOpen} />
-      <ThemeSwitcherDialog open={themeSwitcherOpen} onOpenChange={setThemeSwitcherOpen} />
-      <TemplateManagerDialog open={templateManagerOpen} onOpenChange={setTemplateManagerOpen} />
+      {/* Use the actual implemented dialogs */}
+      <ThemeSwitcher open={themeSwitcherOpen} onOpenChange={setThemeSwitcherOpen} />
+      <TemplateManager open={templateManagerOpen} onOpenChange={setTemplateManagerOpen} />
     </>
   );
 }

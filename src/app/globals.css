@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -109,4 +110,15 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Style for days with tasks in react-day-picker */
+.rdp-day_selected.day-with-tasks:not(.rdp-day_outside) {
+  /* Ensure selected day with tasks has a clear visual style */
+  font-weight: bold;
+}
+
+.day-with-tasks:not(.rdp-day_outside) > div > span {
+  /* This is a custom dot indicator, handled by DayContent in CalendarView.tsx */
+  /* You can add baseline styles here if needed, but it's mostly dynamic */
 }
