@@ -23,7 +23,6 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Task } from '@/lib/types';
 import type { DayContentProps } from 'react-day-picker';
-// Slider import removed
 import { useHydration } from '@/hooks/useHydration'; 
 
 const CustomDayContent = (props: DayContentProps) => {
@@ -59,19 +58,19 @@ const CustomDayContent = (props: DayContentProps) => {
   );
 
   let taskDisplayElement;
-  if (!hydrated && tasks.length === 0) { // Show loading if not hydrated and no tasks initially
+  if (!hydrated && tasks.length === 0) { 
     taskDisplayElement = (
        <div className="flex-grow flex items-center justify-center">
         <p className="text-xs text-muted-foreground/70">Loading...</p>
       </div>
     );
-  } else if (hydrated && tasks.length === 0) { // Show "No tasks" if hydrated and no tasks
+  } else if (hydrated && tasks.length === 0) { 
      taskDisplayElement = (
       <div className="flex-grow flex items-center justify-center">
         <p className="text-xs text-muted-foreground/70">No tasks</p>
       </div>
     );
-  } else { // Display tasks if hydrated and tasks exist
+  } else { 
     taskDisplayElement = (
       <ScrollArea className="flex-grow h-0"> 
         <ul className="space-y-1 text-xs">
@@ -133,13 +132,6 @@ export function CalendarView() {
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  // Removed states and refs related to the custom slider:
-  // scrollableCalendarRef, sliderValue, setSliderValue, sliderMax, setSliderMax, isScrollable
-
-  // Removed functions related to the custom slider:
-  // updateScrollState, handleScroll, handleSliderChange
-
-  // Removed useEffects related to updateScrollState
 
   const handleAddTask = () => {
     if (!formattedSelectedDate || !newTaskTitle.trim()) {
@@ -191,7 +183,7 @@ export function CalendarView() {
 
 
   return (
-    <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+    <div className="grid w-full md:grid-cols-3 gap-6 md:gap-8">
       <Card className="md:col-span-2 shadow-lg flex flex-col overflow-hidden">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
@@ -200,17 +192,14 @@ export function CalendarView() {
           <CardDescription>Select a day to view and manage its tasks. Calendar cells show a preview of tasks.</CardDescription>
         </CardHeader>
         <CardContent 
-          // ref removed as it was for the custom slider
-          className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto" // overflow-y-auto will provide browser scrollbar
+          className="p-0 sm:p-1 md:p-2 flex-grow overflow-y-auto" 
           style={{ maxHeight: '65vh' }} 
-          // onScroll removed
         >
           <Calendar
             mode="single"
             selected={selectedDate}
             onSelect={(date) => {
               setSelectedDate(date);
-              // setTimeout(updateScrollState, 50); // Removed call to updateScrollState
             }}
             className="rounded-md w-full"
             modifiers={{ hasTasks: daysWithTasksModifiers }}
@@ -222,7 +211,6 @@ export function CalendarView() {
             }}
           />
         </CardContent>
-        {/* Custom Slider and its container div removed */}
       </Card>
 
       <Card className="md:col-span-1 shadow-lg">
@@ -288,7 +276,7 @@ export function CalendarView() {
                           const selectedTemplate = templates.find(t => t.id === templateId);
                           if(selectedTemplate) {
                             const cancelButton = document.querySelector('button[aria-label="Cancel"]') as HTMLElement | null;
-                            if (cancelButton) cancelButton.click(); // Close the dialog
+                            if (cancelButton) cancelButton.click(); 
                             handleApplyTemplate(templateId, true);
                           }
                         }}>
