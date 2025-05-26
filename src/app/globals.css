@@ -113,12 +113,34 @@ body {
 }
 
 /* Style for days with tasks in react-day-picker */
-.rdp-day_selected.day-with-tasks:not(.rdp-day_outside) {
-  /* Ensure selected day with tasks has a clear visual style */
-  font-weight: bold;
+/* This class is not strictly necessary anymore as tasks are rendered directly */
+.day-with-tasks-modifier:not(.rdp-day_outside) {
+  /* Example: slightly different background if still desired */
+  /* background-color: hsl(var(--primary) / 0.1); */
 }
 
-.day-with-tasks:not(.rdp-day_outside) > div > span {
-  /* This is a custom dot indicator, handled by DayContent in CalendarView.tsx */
-  /* You can add baseline styles here if needed, but it's mostly dynamic */
+/* Style for the day cells when selected */
+.rdp-day_selected:not(.rdp-day_outside) {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.rdp-day_selected:not(.rdp-day_outside) span,
+.rdp-day_selected:not(.rdp-day_outside) div,
+.rdp-day_selected:not(.rdp-day_outside) li,
+.rdp-day_selected:not(.rdp-day_outside) p {
+   color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Ensure selected day text (date number, tasks) is primary-foreground color */
+.rdp-button[aria-selected="true"] > div > div, /* Day number */
+.rdp-button[aria-selected="true"] > div ul li, /* Task list items */
+.rdp-button[aria-selected="true"] > div p /* "No tasks" text */
+ {
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Override line-through color for completed tasks on selected day */
+.rdp-button[aria-selected="true"] > div ul li.line-through {
+  color: hsl(var(--primary-foreground) / 0.7) !important; /* Slightly lighter for muted effect */
 }
