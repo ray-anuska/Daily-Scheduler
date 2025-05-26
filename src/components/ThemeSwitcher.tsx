@@ -95,7 +95,8 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-hidden py-4">
+        {/* Adjusted the div wrapping ScrollArea */}
+        <div className="flex-grow min-h-0 py-4">
           <ScrollArea className="h-full pr-6">
             <div className="space-y-6">
               <div>
