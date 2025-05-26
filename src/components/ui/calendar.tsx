@@ -22,7 +22,7 @@ function Calendar({
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
+        month: "space-y-4 w-full", // Ensure month container takes full width
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium",
         nav: "space-x-1 flex items-center",
@@ -33,12 +33,12 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "grid grid-cols-7 w-full gap-1", // Changed from flex to grid
+        head_row: "grid grid-cols-7 w-full gap-1",
         head_cell:
-          "text-muted-foreground rounded-md font-normal text-[0.8rem] p-2 text-center", // Adjusted for grid layout
-        row: "grid grid-cols-7 w-full mt-2 gap-1", // Changed from flex to grid
+          "text-muted-foreground rounded-md font-normal text-[0.8rem] p-2 text-center",
+        row: "grid grid-cols-7 w-full mt-2 gap-1",
         cell: cn(
-          "min-h-[9rem] h-auto p-1 relative flex flex-col items-start justify-start text-sm", // Removed flex-1
+          "min-h-[9rem] h-auto p-1 relative flex flex-col items-start justify-start text-sm flex-1", // Ensure cell takes up its grid space
           "[&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent",
           "first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
           "border rounded-md bg-card hover:bg-muted/50 transition-colors"
