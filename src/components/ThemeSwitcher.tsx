@@ -26,6 +26,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Palette, Edit3, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useHydration } from '@/hooks/useHydration';
 
 interface ThemeSwitcherProps {
   open: boolean;
@@ -33,7 +34,6 @@ interface ThemeSwitcherProps {
 }
 
 const themeColorKeys = Object.keys(defaultThemeColors) as Array<keyof ThemeColors>;
-
 
 const commonNamedColors: Array<{ name: string; hsl: string }> = [
   { name: "White", hsl: "0 0% 100%" },
@@ -85,17 +85,23 @@ const getLabelForKey = (key: keyof ThemeColors): string => {
   }
 };
 
-
 export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
+  const hydrated = useHydration();
   const { toast } = useToast();
   const {
-    customThemes,
-    activeThemeIdentifier,
+    currentUser, // Needed to get user-specific themes
+    userCustomThemes,
+    userActiveThemeIdentifiers,
     addCustomTheme,
     updateCustomTheme,
     setActiveThemeIdentifier,
     deleteCustomTheme,
   } = useAppStore();
+
+  const currentUserId = currentUser?.id || 'guest';
+  const customThemes = userCustomThemes[currentUserId] || [];
+  const activeThemeIdentifier = userActiveThemeIdentifiers[currentUserId] || 'default_light';
+
 
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const [formThemeName, setFormThemeName] = useState('');
@@ -215,6 +221,8 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
     setFormThemeColors(prev => ({ ...prev, [colorKey]: hslValue }));
   };
 
+  if (!hydrated) return null;
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { onOpenChange(isOpen); if (!isOpen) resetFormToCreateMode(); }}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
@@ -226,7 +234,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto min-h-0 pr-4"> {/* Ensure pr-4 for scrollbar space */}
+        <div className="flex-grow overflow-y-auto min-h-0"> 
           <div className="space-y-6 p-4">
             <div>
               <Label htmlFor="active-theme-select" className="text-sm font-medium">Active Theme</Label>
@@ -294,7 +302,7 @@ export function ThemeSwitcher({ open, onOpenChange }: ThemeSwitcherProps) {
                           </SelectTrigger>
                           <SelectContent>
                             {getOptionsForKey(key, editingTheme ? { ...defaultThemeColors, ...editingTheme.colors } : defaultThemeColors).map(option => (
-                              <SelectItem key={option.value + key} value={option.value}>
+                              <SelectItem key={option.value + key + currentUserId} value={option.value}>
                                 {option.label}
                               </SelectItem>
                             ))}

@@ -34,16 +34,16 @@ const CustomDayContent = (props: CustomDayContentProps) => {
   const hydrated = useHydration();
   const dateKey = format(props.date, 'yyyy-MM-dd');
   
-  const tasksForDay_store = useAppStore(state => state.tasksByDate[dateKey]?.tasks || []);
-  
+  // getTasksForDate is already user-aware from the store
+  const dayData = useAppStore(state => state.getTasksForDate(dateKey));
   const tasks = useMemo(() => {
     if (!hydrated) return [];
-    return tasksForDay_store;
-  }, [hydrated, tasksForDay_store]);
+    return dayData?.tasks || [];
+  }, [hydrated, dayData]);
 
   useEffect(() => {
-    // This effect ensures the component re-renders if tasksForDay_store changes after hydration
-  }, [tasksForDay_store]);
+    // This effect ensures the component re-renders if dayData (and thus tasks) changes after hydration
+  }, [dayData]);
 
 
   const MAX_TASKS_DISPLAYED = 3;
@@ -78,7 +78,7 @@ const CustomDayContent = (props: CustomDayContentProps) => {
   } else {
     taskDisplayElement = (
       <ScrollArea className="flex-grow h-0"> 
-        <ul className="space-y-0.5 text-xs"> {/* Reduced space-y for tighter packing */}
+        <ul className="space-y-0.5 text-xs"> 
           {tasks.slice(0, MAX_TASKS_DISPLAYED).map(task => (
             <li
               key={task.id}
@@ -130,15 +130,18 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
 
 
   const {
-    tasksByDate,
-    getTasksForDate,
+    getTasksForDate, // Already user-aware
     addTask,
     deleteTask,
     toggleTaskCompletion,
-    templates,
+    templates, // Global
     applyTemplateToDate,
     setDayNote,
+    userTasksByDate, // Subscribing to this for daysWithTasksModifiers
+    currentUser
   } = useAppStore();
+  
+  const currentUserId = currentUser?.id || 'guest';
 
   const [calendarFlexBasis, setCalendarFlexBasis] = useState('66%');
   const [flexBasisBeforeSidebarClosed, setFlexBasisBeforeSidebarClosed] = useState('66%');
@@ -233,7 +236,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
   const dailyTasksData = useMemo(() => {
     if (!hydrated || !formattedSelectedDate) return undefined;
     return getTasksForDate(formattedSelectedDate);
-  }, [hydrated, formattedSelectedDate, getTasksForDate, tasksByDate]);
+  }, [hydrated, formattedSelectedDate, getTasksForDate, userTasksByDate, currentUserId]); // Added userTasksByDate & currentUserId for reactivity
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
   const dayOverridesTemplate: boolean = dailyTasksData?.overridesTemplate || false;
@@ -279,7 +282,7 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
     applyTemplateToDate(templateId, formattedSelectedDate, force);
     handleTaskToggle();
 
-    const newTasks = getTasksForDate(formattedSelectedDate);
+    const newTasks = getTasksForDate(formattedSelectedDate); // Re-fetch after applying
     if (newTasks && (newTasks.tasks.length !== originalTaskCount || !wasOverriding || force)) {
       toast({ title: "Template Applied", description: `Template applied to ${format(selectedDate!, 'MMMM d, yyyy')}.` });
     } else if (wasOverriding && !force && (templates.find(t => t.id === templateId)?.tasks?.length ?? 0) > 0) {
@@ -289,13 +292,14 @@ export function CalendarView({ isTaskSidebarOpen, setIsTaskSidebarOpen }: Calend
 
   const daysWithTasksModifiers = useMemo(() => {
     if (!hydrated) return [];
-    return Object.keys(tasksByDate)
+    const tasksForCurrentUser = userTasksByDate[currentUserId] || {};
+    return Object.keys(tasksForCurrentUser)
       .filter(dateStr => {
-        const dayData = tasksByDate[dateStr];
+        const dayData = tasksForCurrentUser[dateStr];
         return dayData?.tasks?.length > 0;
       })
       .map(dateStr => parseISO(dateStr));
-  }, [hydrated, tasksByDate]);
+  }, [hydrated, userTasksByDate, currentUserId]);
 
   const handleSaveDayNote = () => {
     if (editingDayNoteFor && formattedSelectedDate === editingDayNoteFor) {

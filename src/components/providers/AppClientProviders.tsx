@@ -25,12 +25,9 @@ function applyThemeToDocument(colors: ThemeColors | Partial<ThemeColors>) {
     }
   });
 
-  // Ensure new task background CSS variables are set
   root.style.setProperty('--task-pending-background', completeColors.taskPendingBackground);
   root.style.setProperty('--task-completed-background', completeColors.taskCompletedBackground);
 
-
-  // Sidebar colors derivation
   const sidebarPrimary = completeColors.primary; 
   const sidebarAccent = completeColors.accent;   
 
@@ -51,16 +48,22 @@ function applyThemeToDocument(colors: ThemeColors | Partial<ThemeColors>) {
 
 export function AppClientProviders({ children }: { children: React.ReactNode }) {
   const hydrated = useHydration();
-  const activeThemeIdentifier = useAppStore((state) => state.activeThemeIdentifier);
-  const customThemes = useAppStore((state) => state.customThemes); 
+  
+  // Subscribe to user-specific theme data
+  const currentUser = useAppStore((state) => state.currentUser);
+  const currentUserId = currentUser?.id || 'guest';
+  
+  const activeThemeIdentifier = useAppStore((state) => state.userActiveThemeIdentifiers[currentUserId] || 'default_light');
+  const customThemesForCurrentUser = useAppStore((state) => state.userCustomThemes[currentUserId] || []);
   const getActiveThemeColors = useAppStore((state) => state.getActiveThemeColors);
+
 
   useEffect(() => {
     if (hydrated) {
       const currentThemeColors = getActiveThemeColors();
       applyThemeToDocument(currentThemeColors);
     }
-  }, [activeThemeIdentifier, customThemes, hydrated, getActiveThemeColors]);
+  }, [activeThemeIdentifier, customThemesForCurrentUser, hydrated, getActiveThemeColors, currentUserId]); // Added currentUserId
 
   useEffect(() => {
     if (!hydrated) { 
@@ -68,9 +71,12 @@ export function AppClientProviders({ children }: { children: React.ReactNode }) 
         applyThemeToDocument(initialColors);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []); // Initial call, getActiveThemeColors will use guest or persisted user
 
   if (!hydrated) {
+    // During SSR or before hydration, we still want to apply a theme (likely default or guest's last)
+    // The useEffect above handles applying theme once hydrated.
+    // The initial render for SSR should use getActiveThemeColors which defaults to guest/default.
     return <>{children}<Toaster /></>;
   }
 

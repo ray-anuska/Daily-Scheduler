@@ -35,13 +35,13 @@ export const predefinedThemes: PredefinedTheme[] = [
   {
     id: 'default_light',
     name: 'Default Light',
-    colors: { ...defaultThemeColors }, 
+    colors: { ...defaultThemeColors },
   },
   {
     id: 'default_dark',
     name: 'Default Dark',
     colors: {
-      ...defaultThemeColors, // Start with defaults then override
+      ...defaultThemeColors,
       background: "240 10% 3.9%",
       foreground: "0 0% 98%",
       card: "240 10% 3.9%",
@@ -133,11 +133,21 @@ export const predefinedThemes: PredefinedTheme[] = [
   }
 ];
 
+const GUEST_USER_ID = 'guest';
+
 interface AppState {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
 
-  tasksByDate: Record<string, DailyTasks>; // Keyed by YYYY-MM-DD
+  // User-specific data
+  userTasksByDate: Record<string, Record<string, DailyTasks>>; // { [userId]: { [date]: DailyTasks } }
+  userCustomThemes: Record<string, CustomTheme[]>; // { [userId]: CustomTheme[] }
+  userActiveThemeIdentifiers: Record<string, string>; // { [userId]: string }
+  
+  // Global data
+  templates: TaskTemplate[];
+
+  // Actions operating on current user's data or global data
   getTasksForDate: (date: string) => DailyTasks | undefined;
   addTask: (date: string, taskTitle: string) => void;
   updateTask: (date: string, taskId: string, updatedProps: Partial<Task>) => void;
@@ -146,14 +156,13 @@ interface AppState {
   setTasksForDate: (date: string, tasks: Task[], overridesTemplate?: boolean) => void;
   setDayNote: (date: string, note: string) => void;
 
-  templates: TaskTemplate[];
   addTemplate: (template: Omit<TaskTemplate, 'id'>) => TaskTemplate;
   updateTemplate: (template: TaskTemplate) => void;
   deleteTemplate: (templateId: string) => void;
   applyTemplateToDate: (templateId: string, date: string, forceOverride?: boolean) => void;
 
-  activeThemeIdentifier: string; 
-  customThemes: CustomTheme[];
+  getActiveUserCustomThemes: () => CustomTheme[];
+  getActiveUserActiveThemeIdentifier: () => string;
   setActiveThemeIdentifier: (identifier: string) => void;
   addCustomTheme: (theme: Omit<CustomTheme, 'id'>) => CustomTheme;
   updateCustomTheme: (theme: CustomTheme) => void;
@@ -163,166 +172,258 @@ interface AppState {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set, get) => ({
-      currentUser: null,
-      setCurrentUser: (user) => set({ currentUser: user }),
+    (set, get) => {
+      const getCurrentUserId = () => get().currentUser?.id || GUEST_USER_ID;
 
-      tasksByDate: {},
-      getTasksForDate: (date) => get().tasksByDate[date],
-      addTask: (date, taskTitle) => set((state) => {
-        const dayTasks = state.tasksByDate[date] || { date, tasks: [], overridesTemplate: true, dayNote: '' };
-        const newTask: Task = { id: generateTaskId(), title: taskTitle, completed: false };
-        return {
-          tasksByDate: {
-            ...state.tasksByDate,
-            [date]: { ...dayTasks, tasks: [...dayTasks.tasks, newTask], overridesTemplate: true },
-          },
-        };
-      }),
-      updateTask: (date, taskId, updatedProps) => set((state) => {
-        const dayTasks = state.tasksByDate[date];
-        if (!dayTasks) return state;
-        return {
-          tasksByDate: {
-            ...state.tasksByDate,
-            [date]: {
-              ...dayTasks,
-              tasks: dayTasks.tasks.map(task => task.id === taskId ? { ...task, ...updatedProps } : task),
-              overridesTemplate: true,
+      return {
+        currentUser: null,
+        setCurrentUser: (user) => set({ currentUser: user }),
+
+        userTasksByDate: {},
+        userCustomThemes: {},
+        userActiveThemeIdentifiers: {},
+        templates: [],
+
+        getTasksForDate: (date) => {
+          const userId = getCurrentUserId();
+          const tasksForUser = get().userTasksByDate[userId] || {};
+          return tasksForUser[date];
+        },
+        addTask: (date, taskTitle) => set((state) => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userTasks = state.userTasksByDate[userId] || {};
+          const dayTasks = userTasks[date] || { date, tasks: [], overridesTemplate: true, dayNote: '' };
+          const newTask: Task = { id: generateTaskId(), title: taskTitle, completed: false };
+          return {
+            userTasksByDate: {
+              ...state.userTasksByDate,
+              [userId]: {
+                ...userTasks,
+                [date]: { ...dayTasks, tasks: [...dayTasks.tasks, newTask], overridesTemplate: true },
+              },
             },
-          },
-        };
-      }),
-      deleteTask: (date, taskId) => set((state) => {
-        const dayTasks = state.tasksByDate[date];
-        if (!dayTasks) return state;
-        return {
-          tasksByDate: {
-            ...state.tasksByDate,
-            [date]: {
-              ...dayTasks,
-              tasks: dayTasks.tasks.filter(task => task.id !== taskId),
-              overridesTemplate: true,
+          };
+        }),
+        updateTask: (date, taskId, updatedProps) => set((state) => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userTasks = state.userTasksByDate[userId] || {};
+          const dayTasks = userTasks[date];
+          if (!dayTasks) return state;
+          return {
+            userTasksByDate: {
+              ...state.userTasksByDate,
+              [userId]: {
+                ...userTasks,
+                [date]: {
+                  ...dayTasks,
+                  tasks: dayTasks.tasks.map(task => task.id === taskId ? { ...task, ...updatedProps } : task),
+                  overridesTemplate: true,
+                },
+              },
             },
-          },
-        };
-      }),
-      toggleTaskCompletion: (date, taskId) => set((state) => {
-        const dayTasks = state.tasksByDate[date];
-        if (!dayTasks) return state;
-        return {
-          tasksByDate: {
-            ...state.tasksByDate,
-            [date]: {
-              ...dayTasks,
-              tasks: dayTasks.tasks.map(task =>
-                task.id === taskId ? { ...task, completed: !task.completed } : task
-              ),
-              overridesTemplate: true,
+          };
+        }),
+        deleteTask: (date, taskId) => set((state) => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userTasks = state.userTasksByDate[userId] || {};
+          const dayTasks = userTasks[date];
+          if (!dayTasks) return state;
+          return {
+            userTasksByDate: {
+              ...state.userTasksByDate,
+              [userId]: {
+                ...userTasks,
+                [date]: {
+                  ...dayTasks,
+                  tasks: dayTasks.tasks.filter(task => task.id !== taskId),
+                  overridesTemplate: true,
+                },
+              },
             },
-          },
-        };
-      }),
-      setTasksForDate: (date, tasks, overridesTemplate = true) => set(state => {
-        const currentDayData = state.tasksByDate[date];
-        return {
-            tasksByDate: {
-                ...state.tasksByDate,
+          };
+        }),
+        toggleTaskCompletion: (date, taskId) => set((state) => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userTasks = state.userTasksByDate[userId] || {};
+          const dayTasks = userTasks[date];
+          if (!dayTasks) return state;
+          return {
+            userTasksByDate: {
+              ...state.userTasksByDate,
+              [userId]: {
+                ...userTasks,
+                [date]: {
+                  ...dayTasks,
+                  tasks: dayTasks.tasks.map(task =>
+                    task.id === taskId ? { ...task, completed: !task.completed } : task
+                  ),
+                  overridesTemplate: true,
+                },
+              },
+            },
+          };
+        }),
+        setTasksForDate: (date, tasks, overridesTemplate = true) => set(state => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userTasks = state.userTasksByDate[userId] || {};
+          const currentDayData = userTasks[date];
+          return {
+            userTasksByDate: {
+              ...state.userTasksByDate,
+              [userId]: {
+                ...userTasks,
                 [date]: { 
-                    date, 
-                    tasks, 
-                    overridesTemplate, 
-                    dayNote: overridesTemplate ? currentDayData?.dayNote : '' // Clear note if template is applied
+                  date, 
+                  tasks, 
+                  overridesTemplate, 
+                  dayNote: overridesTemplate ? currentDayData?.dayNote : '' 
                 }
+              }
             }
-        }
-      }),
-      setDayNote: (date, note) => set(state => {
-        const dayTasks = state.tasksByDate[date] || { date, tasks: [], dayNote: '' };
-        return {
-          tasksByDate: {
-            ...state.tasksByDate,
-            [date]: {
-              ...dayTasks,
-              dayNote: note,
-              overridesTemplate: true, // Setting a note implies customization
+          }
+        }),
+        setDayNote: (date, note) => set(state => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userTasks = state.userTasksByDate[userId] || {};
+          const dayTasks = userTasks[date] || { date, tasks: [], dayNote: '' };
+          return {
+            userTasksByDate: {
+              ...state.userTasksByDate,
+              [userId]: {
+                ...userTasks,
+                [date]: {
+                  ...dayTasks,
+                  dayNote: note,
+                  overridesTemplate: true, 
+                },
+              },
             },
-          },
-        };
-      }),
+          };
+        }),
 
-      templates: [],
-      addTemplate: (templateData) => {
-        const newTemplate: TaskTemplate = { ...templateData, id: generateTemplateId() };
-        set((state) => ({ templates: [...state.templates, newTemplate] }));
-        return newTemplate;
-      },
-      updateTemplate: (updatedTemplate) => set((state) => ({
-        templates: state.templates.map(t => t.id === updatedTemplate.id ? updatedTemplate : t),
-      })),
-      deleteTemplate: (templateId) => set((state) => ({
-        templates: state.templates.filter(t => t.id !== templateId),
-      })),
-      applyTemplateToDate: (templateId, date, forceOverride = false) => {
-        const template = get().templates.find(t => t.id === templateId);
-        if (!template) return;
+        addTemplate: (templateData) => {
+          const newTemplate: TaskTemplate = { ...templateData, id: generateTemplateId() };
+          set((state) => ({ templates: [...state.templates, newTemplate] }));
+          return newTemplate;
+        },
+        updateTemplate: (updatedTemplate) => set((state) => ({
+          templates: state.templates.map(t => t.id === updatedTemplate.id ? updatedTemplate : t),
+        })),
+        deleteTemplate: (templateId) => set((state) => ({
+          templates: state.templates.filter(t => t.id !== templateId),
+        })),
+        applyTemplateToDate: (templateId, date, forceOverride = false) => {
+          const template = get().templates.find(t => t.id === templateId);
+          if (!template) return;
 
-        const existingDailyTasks = get().tasksByDate[date];
-        if (existingDailyTasks && existingDailyTasks.overridesTemplate && !forceOverride) {
-          console.warn(`Tasks for ${date} are custom, template not applied.`);
-          return;
-        }
+          const userId = getCurrentUserId();
+          const userTasks = get().userTasksByDate[userId] || {};
+          const existingDailyTasks = userTasks[date];
 
-        const newTasksFromTemplate = template.tasks.map(taskBase => ({
-          id: generateTaskId(),
-          title: taskBase.title,
-          completed: false,
-        }));
+          if (existingDailyTasks && existingDailyTasks.overridesTemplate && !forceOverride) {
+            console.warn(`Tasks for ${date} are custom for user ${userId}, template not applied.`);
+            return;
+          }
 
-        get().setTasksForDate(date, newTasksFromTemplate, false); // sets overridesTemplate to false
-      },
+          const newTasksFromTemplate = template.tasks.map(taskBase => ({
+            id: generateTaskId(),
+            title: taskBase.title,
+            completed: false,
+          }));
 
-      activeThemeIdentifier: 'default_light', 
-      customThemes: [],
-      setActiveThemeIdentifier: (identifier) => set({ activeThemeIdentifier: identifier }),
-      addCustomTheme: (themeData) => {
-        const newTheme: CustomTheme = { ...themeData, id: generateThemeId() };
-        set((state) => ({
-          customThemes: [...state.customThemes, newTheme],
-          activeThemeIdentifier: newTheme.id, 
-        }));
-        return newTheme;
-      },
-      updateCustomTheme: (updatedTheme) => set((state) => ({
-        customThemes: state.customThemes.map(t => t.id === updatedTheme.id ? updatedTheme : t),
-        activeThemeIdentifier: updatedTheme.id, 
-      })),
-      deleteCustomTheme: (themeId) => set((state) => ({
-        customThemes: state.customThemes.filter(t => t.id !== themeId),
-        activeThemeIdentifier: state.activeThemeIdentifier === themeId ? 'default_light' : state.activeThemeIdentifier,
-      })),
-      getActiveThemeColors: () => {
-        const { activeThemeIdentifier, customThemes } = get();
-        const predefined = predefinedThemes.find(pt => pt.id === activeThemeIdentifier);
-        if (predefined) {
-          return { ...defaultThemeColors, ...predefined.colors }; 
-        }
-        const custom = customThemes.find(ct => ct.id === activeThemeIdentifier);
-        if (custom) {
-          return { ...defaultThemeColors, ...custom.colors }; 
-        }
-        return defaultThemeColors; 
-      },
-    }),
+          get().setTasksForDate(date, newTasksFromTemplate, false); 
+        },
+        
+        getActiveUserCustomThemes: () => {
+          const userId = getCurrentUserId();
+          return get().userCustomThemes[userId] || [];
+        },
+        getActiveUserActiveThemeIdentifier: () => {
+          const userId = getCurrentUserId();
+          return get().userActiveThemeIdentifiers[userId] || 'default_light';
+        },
+        setActiveThemeIdentifier: (identifier) => set((state) => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          return {
+            userActiveThemeIdentifiers: {
+              ...state.userActiveThemeIdentifiers,
+              [userId]: identifier,
+            }
+          }
+        }),
+        addCustomTheme: (themeData) => {
+          const userId = getCurrentUserId();
+          const newTheme: CustomTheme = { ...themeData, id: generateThemeId() };
+          set((state) => {
+            const userThemes = state.userCustomThemes[userId] || [];
+            return {
+              userCustomThemes: {
+                ...state.userCustomThemes,
+                [userId]: [...userThemes, newTheme],
+              },
+              userActiveThemeIdentifiers: {
+                ...state.userActiveThemeIdentifiers,
+                [userId]: newTheme.id,
+              }
+            }
+          });
+          return newTheme;
+        },
+        updateCustomTheme: (updatedTheme) => set((state) => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userThemes = state.userCustomThemes[userId] || [];
+          return {
+            userCustomThemes: {
+              ...state.userCustomThemes,
+              [userId]: userThemes.map(t => t.id === updatedTheme.id ? updatedTheme : t),
+            },
+            userActiveThemeIdentifiers: {
+              ...state.userActiveThemeIdentifiers,
+              [userId]: updatedTheme.id,
+            }
+          }
+        }),
+        deleteCustomTheme: (themeId) => set((state) => {
+          const userId = state.currentUser?.id || GUEST_USER_ID;
+          const userThemes = state.userCustomThemes[userId] || [];
+          const currentActiveTheme = state.userActiveThemeIdentifiers[userId] || 'default_light';
+          return {
+            userCustomThemes: {
+              ...state.userCustomThemes,
+              [userId]: userThemes.filter(t => t.id !== themeId),
+            },
+            userActiveThemeIdentifiers: {
+              ...state.userActiveThemeIdentifiers,
+              [userId]: currentActiveTheme === themeId ? 'default_light' : currentActiveTheme,
+            }
+          }
+        }),
+        getActiveThemeColors: () => {
+          const userId = getCurrentUserId();
+          const activeIdentifier = get().userActiveThemeIdentifiers[userId] || 'default_light';
+          const userThemes = get().userCustomThemes[userId] || [];
+          
+          const predefined = predefinedThemes.find(pt => pt.id === activeIdentifier);
+          if (predefined) {
+            return { ...defaultThemeColors, ...predefined.colors }; 
+          }
+          const custom = userThemes.find(ct => ct.id === activeIdentifier);
+          if (custom) {
+            return { ...defaultThemeColors, ...custom.colors }; 
+          }
+          return defaultThemeColors; 
+        },
+      }
+    },
     {
       name: 'habitual-calendar-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         currentUser: state.currentUser,
-        tasksByDate: state.tasksByDate,
+        userTasksByDate: state.userTasksByDate,
+        userCustomThemes: state.userCustomThemes,
+        userActiveThemeIdentifiers: state.userActiveThemeIdentifiers,
         templates: state.templates,
-        activeThemeIdentifier: state.activeThemeIdentifier,
-        customThemes: state.customThemes,
       }),
     }
   )
