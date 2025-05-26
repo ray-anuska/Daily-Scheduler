@@ -24,17 +24,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { Task } from '@/lib/types';
 import type { DayContentProps } from 'react-day-picker';
 import { Slider } from '@/components/ui/slider';
-import { useHydration } from '@/hooks/useHydration'; // Import useHydration
+import { useHydration } from '@/hooks/useHydration'; 
 
 const CustomDayContent = (props: DayContentProps) => {
-  const hydrated = useHydration(); // Use the hydration hook
+  const hydrated = useHydration(); 
   const { getTasksForDate } = useAppStore();
   const dateKey = format(props.date, 'yyyy-MM-dd');
   
-  // Defer getting tasks until hydrated to prevent mismatch with server render
   const tasks = useMemo(() => {
     if (!hydrated) {
-      return []; // On server and initial client render, assume no tasks for consistency
+      return []; 
     }
     const dayData = getTasksForDate(dateKey);
     return dayData?.tasks || [];
@@ -50,20 +49,14 @@ const CustomDayContent = (props: DayContentProps) => {
     );
   }
 
-  // Common day number element
   const dayNumberElement = (
     <div className="self-end text-xs font-medium text-foreground/80 mb-1">
       {props.date.getDate()}
     </div>
   );
 
-  // Conditionally render task content based on hydration and task presence
   let taskDisplayElement;
   if (!hydrated || tasks.length === 0) {
-    // This structure is rendered by:
-    // 1. Server (tasks are empty as no localStorage)
-    // 2. Client initially (hydrated is false, tasks forced empty)
-    // 3. Client after hydration if tasks are genuinely empty
     taskDisplayElement = (
       <div className="flex-grow flex items-center justify-center">
         <p className="text-xs text-muted-foreground/70">
@@ -72,7 +65,6 @@ const CustomDayContent = (props: DayContentProps) => {
       </div>
     );
   } else {
-    // This structure is rendered only after hydration AND if there are tasks
     taskDisplayElement = (
       <ScrollArea className="flex-grow h-0"> 
         <ul className="space-y-1 text-xs">
@@ -105,6 +97,7 @@ const CustomDayContent = (props: DayContentProps) => {
 
 
 export function CalendarView() {
+  const hydrated = useHydration();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
@@ -123,9 +116,9 @@ export function CalendarView() {
   }, [selectedDate]);
 
   const dailyTasksData = useMemo(() => {
-    if (!formattedSelectedDate) return undefined;
+    if (!hydrated || !formattedSelectedDate) return undefined; // Defer until hydrated
     return getTasksForDate(formattedSelectedDate);
-  }, [formattedSelectedDate, getTasksForDate, tasksByDate]); 
+  }, [hydrated, formattedSelectedDate, getTasksForDate, tasksByDate]); 
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
   const dayOverridesTemplate: boolean = dailyTasksData?.overridesTemplate || false;
@@ -219,13 +212,14 @@ export function CalendarView() {
   };
 
   const daysWithTasksModifiers = useMemo(() => {
+    if (!hydrated) return []; // Defer until hydrated
     return Object.keys(tasksByDate)
       .filter(dateStr => {
         const dayData = tasksByDate[dateStr];
         return dayData?.tasks?.length > 0;
       })
       .map(dateStr => parseISO(dateStr));
-  }, [tasksByDate]);
+  }, [hydrated, tasksByDate]);
 
 
   return (
@@ -279,12 +273,12 @@ export function CalendarView() {
           <CardTitle className="text-xl">
             Tasks for: {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'No date selected'}
           </CardTitle>
-           {dailyTasksData && !dayOverridesTemplate && dailyTasksData.tasks.length > 0 && (
+           {hydrated && dailyTasksData && !dayOverridesTemplate && dailyTasksData.tasks.length > 0 && (
             <CardDescription className="text-xs text-accent-foreground bg-accent/20 p-1 rounded-md">
               Tasks from template. Edit to customize.
             </CardDescription>
           )}
-          {dailyTasksData && dayOverridesTemplate && (
+          {hydrated && dailyTasksData && dayOverridesTemplate && (
              <CardDescription className="text-xs text-primary-foreground bg-primary/20 p-1 rounded-md">
               Customized tasks for this day.
             </CardDescription>
@@ -393,7 +387,7 @@ export function CalendarView() {
               </ul>
             ) : (
               <p className="text-center text-muted-foreground py-8">
-                No tasks for this day. Add some or apply a template!
+                {!hydrated ? "Loading tasks..." : "No tasks for this day. Add some or apply a template!"}
               </p>
             )}
           </ScrollArea>
@@ -402,3 +396,4 @@ export function CalendarView() {
     </div>
   );
 }
+
