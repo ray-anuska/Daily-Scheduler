@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, CalendarDays, CheckCircle, Circle, AlertTriangle } from 'lucide-react';
+import { Trash2, PlusCircle, CalendarDays } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -22,6 +22,48 @@ import {
 } from "@/components/ui/select"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Task } from '@/lib/types';
+import type { DayContentProps } from 'react-day-picker';
+
+// Define CustomDayContent outside or memoized if it were inside CalendarView
+// This component now directly subscribes to tasksByDate for reactivity.
+const CustomDayContent = (props: DayContentProps) => {
+  const tasksByDate = useAppStore((state) => state.tasksByDate);
+
+  // Default rendering for the day number, centered in the cell
+  const dayNumberElement = (
+    <div className="flex h-full w-full items-center justify-center">
+      {props.date.getDate()}
+    </div>
+  );
+
+  // Do not render dots for days outside the current display month
+  if (props.displayMonth.getMonth() !== props.date.getMonth()) {
+    return dayNumberElement;
+  }
+
+  const dateKey = format(props.date, 'yyyy-MM-dd');
+  const dayData = tasksByDate[dateKey];
+
+  if (dayData && dayData.tasks.length > 0) {
+    const completedTasks = dayData.tasks.filter(t => t.completed).length;
+    const totalTasks = dayData.tasks.length;
+    let indicatorColor = 'bg-muted-foreground/30'; // Default for some tasks
+    if (totalTasks > 0) {
+      if (completedTasks === totalTasks) indicatorColor = 'bg-green-500/70'; // All completed
+      else if (completedTasks > 0) indicatorColor = 'bg-yellow-500/70'; // Some completed
+    }
+    
+    return (
+      //Ensure relative positioning for the dot and flex container for centering
+      <div className="relative flex h-full w-full items-center justify-center">
+        {dayNumberElement}
+        <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full ${indicatorColor}`} />
+      </div>
+    );
+  }
+  return dayNumberElement;
+};
+
 
 export function CalendarView() {
   const { toast } = useToast();
@@ -42,8 +84,11 @@ export function CalendarView() {
   }, [selectedDate]);
 
   const dailyTasksData = useMemo(() => {
-    return formattedSelectedDate ? getTasksForDate(formattedSelectedDate) : undefined;
-  }, [formattedSelectedDate, getTasksForDate]);
+    // Ensure this memo also updates if tasks for the selected date change
+    // by including tasksByDate (or a derivative) in dependency array
+    if (!formattedSelectedDate) return undefined;
+    return getTasksForDate(formattedSelectedDate);
+  }, [formattedSelectedDate, getTasksForDate, tasksByDate]); // Added tasksByDate
 
   const tasksForSelectedDay: Task[] = dailyTasksData?.tasks || [];
   const dayOverridesTemplate: boolean = dailyTasksData?.overridesTemplate || false;
@@ -69,27 +114,31 @@ export function CalendarView() {
   const handleToggleTask = (taskId: string) => {
     if (!formattedSelectedDate) return;
     toggleTaskCompletion(formattedSelectedDate, taskId);
+    // Toast for toggle can be added here if desired, e.g.,
+    // const task = tasksForSelectedDay.find(t => t.id === taskId);
+    // if (task) {
+    //   toast({ title: `Task ${task.completed ? 'marked incomplete' : 'completed'}`});
+    // }
   };
   
   const handleApplyTemplate = (templateId: string, force: boolean = false) => {
     if (!formattedSelectedDate || !templateId) return;
     
-    // The store's applyTemplateToDate already handles the logic for forceOverride
-    // and not applying if dayOverridesTemplate is true and force is false.
-    // We can rely on that and provide feedback.
     const currentTasks = getTasksForDate(formattedSelectedDate);
     const originalTaskCount = currentTasks?.tasks.length || 0;
     const wasOverriding = currentTasks?.overridesTemplate || false;
 
     applyTemplateToDate(templateId, formattedSelectedDate, force);
     
-    const newTasks = getTasksForDate(formattedSelectedDate);
+    const newTasks = getTasksForDate(formattedSelectedDate); // Fetch updated tasks
     if (newTasks && (newTasks.tasks.length !== originalTaskCount || !wasOverriding || force)) {
       toast({ title: "Template Applied", description: `Template applied to ${format(selectedDate!, 'MMMM d, yyyy')}.` });
-    } else if (wasOverriding && !force) {
+    } else if (wasOverriding && !force && (template?.tasks?.length ?? 0) > 0) { // Check if template had tasks
        toast({ title: "Template Not Applied", description: "Day has custom tasks. Use 'Force Apply' to override.", variant: "default" });
     } else {
-       toast({ title: "Template Not Applied", description: "Could not apply template.", variant: "destructive" });
+       // This case might be hit if template is empty or no effective change occurred
+       // Be more specific if possible, or remove if too generic
+       // toast({ title: "Template Not Applied", description: "Could not apply template or no changes made.", variant: "destructive" });
     }
   };
 
@@ -120,31 +169,7 @@ export function CalendarView() {
               hasTasks: 'relative !bg-primary/20 dark:!bg-primary/30',
             }}
             components={{
-              DayContent: (props) => {
-                const originalDayContent = <div className={props. γελοιογράφος?.dayDivClassName || ''}>{props.date.getDate()}</div>; // default renderer
-                if (props.displayMonth.getMonth() !== props.date.getMonth()) {
-                  return originalDayContent;
-                }
-                const dateKey = format(props.date, 'yyyy-MM-dd');
-                const dayData = tasksByDate[dateKey];
-                if (dayData && dayData.tasks.length > 0) {
-                  const completedTasks = dayData.tasks.filter(t => t.completed).length;
-                  const totalTasks = dayData.tasks.length;
-                  let indicatorColor = 'bg-muted-foreground/30'; // Default for some tasks
-                  if (totalTasks > 0) {
-                    if (completedTasks === totalTasks) indicatorColor = 'bg-green-500/70'; // All completed
-                    else if (completedTasks > 0) indicatorColor = 'bg-yellow-500/70'; // Some completed
-                  }
-                  
-                  return (
-                    <div className="relative w-full h-full flex items-center justify-center">
-                      {originalDayContent}
-                      <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full ${indicatorColor}`} />
-                    </div>
-                  );
-                }
-                return originalDayContent;
-              }
+              DayContent: CustomDayContent, // Use the new CustomDayContent component
             }}
           />
         </CardContent>
@@ -183,7 +208,10 @@ export function CalendarView() {
             </div>
             {templates.length > 0 && (
                <div className="flex gap-2 items-center">
-                <Select onValueChange={(templateId) => { if(templateId) handleApplyTemplate(templateId); }}>
+                <Select onValueChange={(templateId) => { 
+                    const selectedTemplate = templates.find(t => t.id === templateId);
+                    if(selectedTemplate) handleApplyTemplate(templateId); 
+                  }}>
                   <SelectTrigger className="flex-grow" aria-label="Apply Template">
                     <SelectValue placeholder="Apply a Template..." />
                   </SelectTrigger>
@@ -195,7 +223,7 @@ export function CalendarView() {
                 </Select>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" disabled={!useAppStore.getState().templates.find(t => !!t) || !selectedDate}>Force Apply</Button>
+                     <Button variant="outline" size="sm" disabled={!templates.find(t => !!t) || !selectedDate}>Force Apply</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -204,12 +232,15 @@ export function CalendarView() {
                         This will override any custom tasks for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'this day'}. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
+                    <AlertDialogFooter className="sm:flex-col sm:space-x-0 sm:space-y-2">
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                        <Select onValueChange={(templateId) => {
-                          if(templateId) {
+                          const selectedTemplate = templates.find(t => t.id === templateId);
+                          if(selectedTemplate) {
+                            // We need to find a way to close the AlertDialog after action.
+                            // For now, the action will proceed. User has to manually close.
+                            // One option is to manage AlertDialog open state manually.
                             handleApplyTemplate(templateId, true);
-                            // Close dialog - find a way if Radix allows closing parent from child action
                           }
                         }}>
                         <SelectTrigger className="w-full" aria-label="Select Template to Force Apply">
